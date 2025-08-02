@@ -1,9 +1,6 @@
-## Инструкция по запуску
-Скрипт инициализации шардов вынесен в sharding-repl-cache/mongo-init/, вручную ничего делать не нужно, просто запустить docker-compose up из директории sharding-repl-cache.
+Скрипт инициализации реплик вынесен в mongo-init, вручную ничего делать не нужно (ниже представлен код).
+Для проверки заполненных документов в шардах и репликах можно вызвать data_distribution.sh
 
-Для проверки заполненных документов в шардах и репликах можно вызвать data_distribution.sh, либо посмотреть логи контейнера init_mongo.
-
-Ниже скрипт инициализации из init-контейнера mongodb, запускать его не нужно, запустится автоматически.
 #!/bin/bash
 set -e
 
@@ -78,8 +75,8 @@ for entry in "${REPLICAS[@]}"; do
     try {
       const status = rs.status();
       status.members.forEach(m => {
-        const role = (m.stateStr === "PRIMARY" || m.stateStr === "SECONDARY" || m.stateStr === "ARBITER") ? m.stateStr : (""+ m.stateStr);
-        print(" - " + m.name + " " role);
+        const role = (m.stateStr === "PRIMARY" || m.stateStr === "SECONDARY" || m.stateStr === "ARBITER") ? m.stateStr : ("" + m.stateStr);
+        print(" - " + m.name + " " + role);
       });
     } catch (e) {
       print("Error: " + e.message);
