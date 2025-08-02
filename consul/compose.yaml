@@ -1,0 +1,393 @@
+name: consul
+
+services:
+
+  consul:
+    image: consul:1.15.1
+    container_name: consul
+    restart: always
+    networks:
+      app-net:
+        ipv4_address: 173.17.0.2
+    ports:
+      - '8500:8500'
+    command: 'agent -server -bootstrap-expect=1 -node=agent-one -client 0.0.0.0 -log-level info -data-dir=/consul/data -enable-script-checks'
+
+  valkey:
+    image: valkey/valkey
+    container_name: valkey
+    ports:
+      - "6379:6379"
+    networks:
+      app-net:
+        ipv4_address: 173.17.0.3
+
+  apisix:
+    image: apache/apisix:3.9.0-debian
+    restart: always
+    volumes:
+      - ./apisix_conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+    depends_on:
+      - etcd
+    ##network_mode: host
+    ports:
+      - "9180:9180/tcp"
+      - "9080:9080/tcp"
+      - "9091:9091/tcp"
+      - "9443:9443/tcp"
+      - "9092:9092/tcp"
+    networks:
+      app-net:
+        ipv4_address: 173.17.0.4
+
+  etcd:
+    image: bitnami/etcd:3.5.11
+    restart: always
+    volumes:
+      - etcd_data:/bitnami/etcd
+    environment:
+      ETCD_ENABLE_V2: "true"
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
+      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+    ports:
+      - "2379:2379/tcp"
+    networks:
+      app-net:
+        ipv4_address: 173.17.0.2
+
+  dc1-api:
+    build:
+      context: ./api_app
+      dockerfile: Dockerfile
+    container_name: dc1-api
+    environment:
+      MONGODB_URL: "mongodb://dc1-router:27020"
+      MONGODB_DATABASE_NAME: "somedb"
+      CONSUL_HTTP_ADDR: "http://consul:8500"
+    depends_on:
+      - dc1-router
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.10
+
+  dc1-router:
+    image: mongo
+    container_name: dc1-router
+    command: >
+      mongos --configdb configRepl/dc1-cfg1:27017,dc1-cfg2:27017,dc1-cfg3:27017 --bind_ip_all --port 27020
+    ports:
+      - "27020:27020"
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.11
+
+  dc1-cfg1:
+    image: mongo
+    container_name: dc1-cfg1
+    command: ["--configsvr", "--replSet", "configRepl", "--port", "27017"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.12
+    volumes:
+      - dc1-configSrv1-data:/data/db
+
+  dc1-cfg2:
+    image: mongo
+    container_name: dc1-cfg2
+    command: ["--configsvr", "--replSet", "configRepl", "--port", "27017"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.13
+    volumes:
+      - dc1-configSrv2-data:/data/db
+
+  dc1-cfg3:
+    image: mongo
+    container_name: dc1-cfg3
+    command: ["--configsvr", "--replSet", "configRepl", "--port", "27017"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.14
+    volumes:
+      - dc1-configSrv3-data:/data/db
+
+  dc1-shard1a:
+    image: mongo
+    container_name: dc1-shard1a
+    command: ["--shardsvr", "--replSet", "shard1Repl", "--port", "27018"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.21
+    volumes:
+      - dc1-shard1a-data:/data/db
+
+  dc1-shard1b:
+    image: mongo
+    container_name: dc1-shard1b
+    command: ["--shardsvr", "--replSet", "shard1Repl", "--port", "27018"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.22
+    volumes:
+      - dc1-shard1b-data:/data/db
+
+  dc1-shard1c:
+    image: mongo
+    container_name: dc1-shard1c
+    command: ["--shardsvr", "--replSet", "shard1Repl", "--port", "27018"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.23
+    volumes:
+      - dc1-shard1c-data:/data/db
+
+  dc1-shard2a:
+    image: mongo
+    container_name: dc1-shard2a
+    command: ["--shardsvr", "--replSet", "shard2Repl", "--port", "27019"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.24
+    volumes:
+      - dc1-shard2a-data:/data/db
+
+  dc1-shard2b:
+    image: mongo
+    container_name: dc1-shard2b
+    command: ["--shardsvr", "--replSet", "shard2Repl", "--port", "27019"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.25
+    volumes:
+      - dc1-shard2b-data:/data/db
+
+  dc1-shard2c:
+    image: mongo
+    container_name: dc1-shard2c
+    command: ["--shardsvr", "--replSet", "shard2Repl", "--port", "27019"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.26
+    volumes:
+      - dc1-shard2c-data:/data/db
+
+  #######################
+  # ЦОД2
+  #######################
+
+  dc2-api:
+    build:
+      context: ./api_app
+      dockerfile: Dockerfile
+    container_name: dc2-api
+    environment:
+      MONGODB_URL: "mongodb://dc2-router:27020"
+      MONGODB_DATABASE_NAME: "somedb"
+      CONSUL_HTTP_ADDR: "http://consul:8500"
+    depends_on:
+      - dc2-router
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.10
+
+  dc2-router:
+    image: mongo
+    container_name: dc2-router
+    command: >
+      mongos --configdb configRepl/dc2-cfg1:27017,dc2-cfg2:27017,dc2-cfg3:27017 --bind_ip_all --port 27020
+    ports:
+      - "27021:27020" #ЦОД 2 доступен снаружи по 27021
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.11
+
+  dc2-cfg1:
+    image: mongo
+    container_name: dc2-cfg1
+    command: ["--configsvr", "--replSet", "configRepl", "--port", "27017"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.12
+    volumes:
+      - dc2-configSrv1-data:/data/db
+
+  dc2-cfg2:
+    image: mongo
+    container_name: dc2-cfg2
+    command: ["--configsvr", "--replSet", "configRepl", "--port", "27017"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.13
+    volumes:
+      - dc2-configSrv2-data:/data/db
+
+  dc2-cfg3:
+    image: mongo
+    container_name: dc2-cfg3
+    command: ["--configsvr", "--replSet", "configRepl", "--port", "27017"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.14
+    volumes:
+      - dc2-configSrv3-data:/data/db
+
+  dc2-shard1a:
+    image: mongo
+    container_name: dc2-shard1a
+    command: ["--shardsvr", "--replSet", "shard1Repl", "--port", "27018"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.27
+    volumes:
+      - dc2-shard1a-data:/data/db
+
+  dc2-shard1b:
+    image: mongo
+    container_name: dc2-shard1b
+    command: ["--shardsvr", "--replSet", "shard1Repl", "--port", "27018"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.28
+    volumes:
+      - dc2-shard1b-data:/data/db
+
+  dc2-shard1c:
+    image: mongo
+    container_name: dc2-shard1c
+    command: ["--shardsvr", "--replSet", "shard1Repl", "--port", "27018"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.29
+    volumes:
+      - dc2-shard1c-data:/data/db
+
+  dc2-shard2a:
+    image: mongo
+    container_name: dc2-shard2a
+    command: ["--shardsvr", "--replSet", "shard2Repl", "--port", "27019"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.30
+    volumes:
+      - dc2-shard2a-data:/data/db
+
+  dc2-shard2b:
+    image: mongo
+    container_name: dc2-shard2b
+    command: ["--shardsvr", "--replSet", "shard2Repl", "--port", "27019"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.31
+    volumes:
+      - dc2-shard2b-data:/data/db
+
+  dc2-shard2c:
+    image: mongo
+    container_name: dc2-shard2c
+    command: ["--shardsvr", "--replSet", "shard2Repl", "--port", "27019"]
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.32
+    volumes:
+      - dc2-shard2c-data:/data/db
+
+  init_mongo_dc1:
+    image: mongo
+    container_name: init_mongo_dc1
+    depends_on:
+      - dc1-router
+      - consul
+    volumes:
+      - ./mongo-init:/scripts
+    entrypoint: >
+      bash -c "
+        echo 'Initializing configRepl for DC1...';
+        mongosh dc1-cfg1:27017 /scripts/init-config.js;
+
+        echo 'Initializing shard1Repl for DC1...';
+        mongosh dc1-shard1a:27018 /scripts/init-shard1.js;
+
+        echo 'Initializing shard2Repl for DC1...';
+        mongosh dc1-shard2a:27019 /scripts/init-shard2.js;
+
+        echo 'Adding shards to mongos for DC1...';
+        mongosh dc1-router:27020 /scripts/init-router.js;
+
+        echo 'Seeding documents into somedb.helloDoc for DC1...';
+        mongosh dc1-router:27020 --eval '
+          const somedb = db.getSiblingDB("somedb");
+          const docs = Array.from({length: 1000}, (_, i) => ({age: i, name: "ly" + i}));
+          somedb.helloDoc.insertMany(docs);
+        '
+        echo 'Registering dc1-api in Consul KV store...';
+        curl --request PUT --data 'http://dc1-api:8080' http://consul:8500/v1/kv/services/dc1-api;
+      "
+    networks:
+      app-net:
+        ipv4_address: 173.17.1.99
+
+  init_mongo_dc2:
+    image: mongo
+    container_name: init_mongo_dc2
+    depends_on:
+      - dc2-router
+      - consul
+    volumes:
+      - ./mongo-init:/scripts
+    entrypoint: >
+      bash -c "
+        echo 'Initializing configRepl for DC2...';
+        mongosh dc2-cfg1:27017 /scripts/init-config.js;
+
+        echo 'Initializing shard1Repl for DC2...';
+        mongosh dc2-shard1a:27018 /scripts/init-shard1.js;
+
+        echo 'Initializing shard2Repl for DC2...';
+        mongosh dc2-shard2a:27019 /scripts/init-shard2.js;
+
+        echo 'Adding shards to mongos for DC2...';
+        mongosh dc2-router:27020 /scripts/init-router.js;
+
+        echo 'Seeding documents into somedb.helloDoc for DC2...';
+        mongosh dc2-router:27020 --eval '
+          const somedb = db.getSiblingDB("somedb");
+          const docs = Array.from({length: 1000}, (_, i) => ({age: i, name: "dc2_ly" + i}));
+          somedb.helloDoc.insertMany(docs);
+        '
+
+        echo 'Registering dc2-api in Consul KV store...';
+        curl --request PUT --data 'http://dc2-api:8080' http://consul:8500/v1/kv/services/dc2-api;
+      "
+    networks:
+      app-net:
+        ipv4_address: 173.17.2.99
+
+networks:
+  app-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 173.17.0.0/16
+
+volumes:
+  dc1-configSrv1-data:
+  dc1-configSrv2-data:
+  dc1-configSrv3-data:
+  dc1-shard1a-data:
+  dc1-shard1b-data:
+  dc1-shard1c-data:
+  dc1-shard2a-data:
+  dc1-shard2b-data:
+  dc1-shard2c-data:
+  dc2-configSrv1-data:
+  dc2-configSrv2-data:
+  dc2-configSrv3-data:
+  dc2-shard1a-data:
+  dc2-shard1b-data:
+  dc2-shard1c-data:
+  dc2-shard2a-data:
+  dc2-shard2b-data:
+  dc2-shard2c-data:
+  etcd_data:
+    driver: local 

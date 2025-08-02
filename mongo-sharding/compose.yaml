@@ -1,0 +1,188 @@
+name: mongo-sharding
+services:
+
+  configSrv:
+    image: mongo:latest
+    container_name: configSrv 
+    restart: always
+    ports:
+      - "27017:27017"
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.10
+    volumes:
+      - config-data:/data/db
+    command:
+      [
+        "--configsvr",  
+        "--replSet",
+        "config_server",
+        "--bind_ip_all",
+        "--port",
+        "27017"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  shard1:
+    image: mongo:latest
+    container_name: shard1
+    restart: always
+    ports:
+      - "27018:27018"
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.9
+    volumes:
+      - shard1-data:/data/db
+    command:
+      [
+        "--shardsvr", 
+        "--replSet",
+        "shard1",
+        "--bind_ip_all",
+        "--port",
+        "27018"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  shard2:
+    image: mongo:latest
+    container_name: shard2
+    restart: always
+    ports:
+      - "27019:27019"
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.8
+    volumes:
+      - shard2-data:/data/db
+    command:
+      [
+        "--shardsvr", 
+        "--replSet",
+        "shard2", 
+        "--bind_ip_all", 
+        "--port",
+        "27019"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  mongos_router:
+    image: mongo:latest
+    container_name: mongos_router
+    restart: always
+    ports:
+      - "27020:27020"
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.7
+    command: >
+      mongos --configdb config_server/configSrv:27017 --bind_ip_all --port 27020
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  init_mongo:
+    image: mongo:latest
+    container_name: init_mongo
+    restart: "no"
+    volumes:
+      - ./mongo-init:/scripts
+    entrypoint: >
+      bash -c "
+        echo 'Waiting for configSrv container...';
+        until mongosh --host configSrv:27017 --eval 'db.runCommand({ ping: 1 })' | grep ok; do sleep 2; done;
+
+        echo 'Initializing config server...';
+        mongosh --host configSrv:27017 /scripts/init-config.js;
+
+        echo 'Waiting for shard1 container...';
+        until mongosh --host shard1:27018 --eval 'db.runCommand({ ping: 1 })' | grep ok; do sleep 2; done;
+
+        echo 'Initializing shard1...';
+        mongosh --host shard1:27018 /scripts/init-shard1.js;
+
+        echo 'Waiting for shard2 container...';
+        until mongosh --host shard2:27019 --eval 'db.runCommand({ ping: 1 })' | grep ok; do sleep 2; done;
+
+        echo 'Initializing shard2...';
+        mongosh --host shard2:27019 /scripts/init-shard2.js;
+
+        echo 'Waiting for mongos_router to be available...';
+        until mongosh --host mongos_router:27020 --eval 'db.runCommand({ ping: 1 })' | grep ok; do sleep 2; done;
+
+        echo 'Adding shards to mongos...';
+        mongosh --host mongos_router:27020 /scripts/init-router.js;
+
+        echo 'Sharded cluster initialized.';
+
+        echo 'Seeding data'
+
+        mongosh --host mongos_router:27020 --eval '
+
+        const somedb = db.getSiblingDB(\"somedb\");
+        var docList = [];
+        for(var i = 0; i < 1000; i++)
+        {
+          docList.push({age:i, name:\"ly\"+i});
+        }
+        somedb.helloDoc.insertMany(docList)'
+        echo 'Data seeding completed successfully'
+
+        mongosh --host shard1:27018 --eval '
+        const somedb = db.getSiblingDB(\"somedb\");
+        console.log(\"shard1 has \" + somedb.helloDoc.countDocuments())'
+        
+        mongosh --host shard1:27019 --eval '
+
+        const somedb = db.getSiblingDB(\"somedb\");
+        console.log(\"shard2 has \" + somedb.helloDoc.countDocuments())'
+      "
+
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.6
+
+  pymongo_api:
+    container_name: pymongo_api
+    build: 
+      context: api_app
+      dockerfile: Dockerfile
+    depends_on:
+      - mongos_router
+    ports:
+      - 8080:8080
+    environment:
+      MONGODB_URL: "mongodb://mongos_router:27020"
+      MONGODB_DATABASE_NAME: "somedb"
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 173.17.0.0/16
+  
+volumes:
+  config-data:
+  shard1-data:
+  shard2-data:
