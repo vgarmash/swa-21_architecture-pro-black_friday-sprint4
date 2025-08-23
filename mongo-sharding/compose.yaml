@@ -1,0 +1,77 @@
+version: '3.8'
+name: mongo-sharding
+
+services:
+  mongodb_master1:
+    container_name: mongodb_master1
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet rs1 --bind_ip_all --port 27018
+    ports:
+      - "27018:27018"
+    volumes:
+      - mongodb_master1_data:/data/db
+    networks:
+      - mongo-cluster
+    
+  mongodb_master2:
+    container_name: mongodb_master2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet rs2 --bind_ip_all --port 27019
+    ports:
+      - "27019:27019"
+    volumes:
+      - mongodb_master2_data:/data/db
+    networks:
+      - mongo-cluster
+
+  mongodb-config:
+    container_name: mongodb-config
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --configsvr --replSet config --bind_ip_all --port 27020
+    ports:
+      - "27020:27020"
+    volumes:
+      - mongodb_config_data:/data/db
+    networks:
+      - mongo-cluster
+
+  mongos-router:
+    container_name: mongos-router
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongos --configdb config/mongodb-config:27020 --bind_ip_all
+    ports:
+      - "27017:27017"
+    depends_on:
+      mongodb_master1:
+        condition: service_started
+      mongodb_master2:
+        condition: service_started
+      mongodb-config:
+        condition: service_started
+    networks:
+      - mongo-cluster
+
+  pymongo_api:
+    container_name: pymongo_api
+    build: 
+      context: api_app
+      dockerfile: Dockerfile
+    depends_on:
+      - mongos-router
+    ports:
+      - "8080:8080"
+    environment:
+      MONGODB_URL: "mongodb://mongos-router"
+      MONGODB_DATABASE_NAME: "somedb"
+    networks:
+      - mongo-cluster
+
+
+volumes:
+  mongodb_master1_data:
+  mongodb_master2_data:
+  mongodb_config_data:
+
+networks:
+  mongo-cluster:
+    driver: bridge

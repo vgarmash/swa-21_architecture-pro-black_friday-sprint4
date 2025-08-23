@@ -1,0 +1,177 @@
+version: '3.8'
+name: mongo-sharding-repl
+
+services:
+
+  mongodb-config:
+    container_name: mongodb-config
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --configsvr --replSet config --bind_ip_all --port 27018
+    ports:
+      - "27018:27018"
+    volumes:
+      - mongodb_config_data:/data/db
+    networks:
+      - mongo-cluster
+  
+  mongodb_master1:
+    container_name: mongodb_master1
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet rs1 --bind_ip_all --port 27020
+    ports:
+      - "27020:27020"
+    volumes:
+      - mongodb_master1_data:/data/db
+    networks:
+      - mongo-cluster
+
+  mongodb_replica1_1:
+    container_name: mongodb_replica1_1
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet rs1 --bind_ip_all --port 27021
+    ports:
+      - "27021:27021"
+    volumes:
+      - mongodb_replica1_1_data:/data/db
+    networks:
+      - mongo-cluster
+  
+  mongodb_replica1_2:
+    container_name: mongodb_replica1_2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet rs1 --bind_ip_all --port 27022
+    ports:
+      - "27022:27022"
+    volumes:
+      - mongodb_replica1_2_data:/data/db
+    networks:
+      - mongo-cluster
+    
+  mongodb_master2:
+    container_name: mongodb_master2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet rs2 --bind_ip_all --port 27030
+    ports:
+      - "27030:27030"
+    volumes:
+      - mongodb_master2_data:/data/db
+    networks:
+      - mongo-cluster
+
+  mongodb_replica2_1:
+    container_name: mongodb_replica2_1
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet rs2 --bind_ip_all --port 27031
+    ports:
+      - "27031:27031"
+    volumes:
+      - mongodb_replica2_1_data:/data/db
+    networks:
+      - mongo-cluster
+  
+  mongodb_replica2_2:
+    container_name: mongodb_replica2_2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet rs2 --bind_ip_all --port 27032
+    ports:
+      - "27032:27032"
+    volumes:
+      - mongodb_replica2_2_data:/data/db
+    networks:
+      - mongo-cluster
+
+  mongos-router:
+    container_name: mongos-router
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongos --configdb config/mongodb-config:27018 --bind_ip_all --port 27017
+    ports:
+      - "27017:27017"
+    depends_on:
+      mongodb-config:
+        condition: service_started
+      mongodb_master1:
+        condition: service_started
+      mongodb_replica1_1:
+        condition: service_started
+      mongodb_replica1_2:
+        condition: service_started
+      mongodb_master2:
+        condition: service_started
+      mongodb_replica2_1:
+        condition: service_started
+      mongodb_replica2_2:
+        condition: service_started
+    networks:
+      - mongo-cluster
+
+  redis_1:
+    image: "redis:latest"
+    container_name: redis_1
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_1_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    networks:
+      - mongo-cluster
+
+  redis_2:
+    image: "redis:latest"
+    container_name: redis_2
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_2_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    networks:
+      - mongo-cluster
+
+  redis_3:
+    image: "redis:latest"
+    container_name: redis_3
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_3_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    networks:
+      - mongo-cluster
+
+  pymongo_api:
+    container_name: pymongo_api
+    build: 
+      context: api_app
+      dockerfile: Dockerfile
+    depends_on:
+      - mongos-router
+      - redis_1
+      - redis_2
+      - redis_3
+    ports:
+      - "8080:8080"
+    environment:
+      MONGODB_URL: "mongodb://mongos-router"
+      MONGODB_DATABASE_NAME: "somedb"
+      REDIS_URL: "redis://redis_1:6379" 
+    networks:
+      - mongo-cluster
+
+
+volumes:
+  mongodb_master1_data:
+  mongodb_replica1_1_data:
+  mongodb_replica1_2_data:
+  mongodb_master2_data:
+  mongodb_replica2_1_data:
+  mongodb_replica2_2_data:
+  mongodb_config_data:
+  redis_1_data:
+  redis_2_data:
+  redis_3_data:
+
+networks:
+  mongo-cluster:
+    driver: bridge
