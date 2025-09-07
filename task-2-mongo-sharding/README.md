@@ -1,35 +1,53 @@
-# pymongo-api
+# Задание 2 — Шардирование MongoDB
 
-## Как запустить
+Кластер  состоит из:
 
-Запускаем mongodb и приложение
+- config server (`configSrv`)
+- два шарда (`shard1`, `shard2`)
+- роутер (`mongos_router`)
+- приложение `api_app`, которое подключается к кластеру через `mongos`
 
-```shell
-docker compose up -d
+## Запуск кластера
+
+```bash
+docker compose up -d --build
+docker compose ps
 ```
 
-Заполняем mongodb данными
+Инициализация шардирования
 
-```shell
-./scripts/mongo-init.sh
+```bash
+docker compose exec -T configSrv mongosh --port 27017 --quiet <<'EOF'
+rs.initiate({
+  _id: "config_server",
+  configsvr: true,
+  members: [ { _id: 0, host: "configSrv:27017" } ]
+});
+EOF
+
+# Shard1
+docker compose exec -T shard1 mongosh --port 27018 --quiet <<'EOF'
+rs.initiate({
+  _id: "shard1",
+  members: [ { _id: 0, host: "shard1:27018" } ]
+});
+EOF
+
+# Shard2
+docker compose exec -T shard2 mongosh --port 27019 --quiet <<'EOF'
+rs.initiate({
+  _id: "shard2",
+  members: [ { _id: 0, host: "shard2:27019" } ]
+});
+EOF
 ```
+Подключение шардов
+```bash
+docker compose exec -T mongos_router mongosh --port 27020 --quiet <<'EOF'
+sh.addShard("shard1/shard1:27018");
+sh.addShard("shard2/shard2:27019");
+sh.enableSharding("somedb");
+sh.shardCollection("somedb.helloDoc", { _id: "hashed" });
+EOF
 
-## Как проверить
-
-### Если вы запускаете проект на локальной машине
-
-Откройте в браузере http://localhost:8080
-
-### Если вы запускаете проект на предоставленной виртуальной машине
-
-Узнать белый ip виртуальной машины
-
-```shell
-curl --silent http://ifconfig.me
 ```
-
-Откройте в браузере http://<ip виртуальной машины>:8080
-
-## Доступные эндпоинты
-
-Список доступных эндпоинтов, swagger http://<ip виртуальной машины>:8080/docs
