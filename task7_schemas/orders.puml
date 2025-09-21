@@ -1,0 +1,29 @@
+@startuml
+' Orders collection schema
+skinparam monochrome true
+skinparam classAttributeIconSize 0
+
+entity "orders" as orders {
+  + _id: string <<PK>>
+  -- fields --
+  user_id: string
+  created_at: datetime
+  items[*].product_id: string
+  items[*].qty: int
+  items[*].price: number
+  items[*].category: string
+  status: string
+  total: number
+  geo: string
+  -- sharding & indexes --
+  <<shard_key>> user_id: 1, created_at: -1
+  <<index>> { status: 1, created_at: -1 }
+}
+
+note right of orders
+Strategy: User-centric time-ordered.
+- User history queries hit one shard
+- Time sort aligns with key suffix
+- Even spread across users
+end note
+@enduml 

@@ -1,0 +1,86 @@
+name: mongo-sharding-repl
+
+services:
+  cfgnode:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--configsvr", "--replSet", "cfgAlpha", "--port", "27017", "--bind_ip_all"]
+    container_name: cfg-repl
+    volumes:
+      - cfg_repl_data:/data/db
+
+  shard_a1:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsA", "--port", "27018", "--bind_ip_all"]
+    container_name: shard-a1
+    volumes:
+      - shard_a1_data:/data/db
+
+  shard_a2:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsA", "--port", "27018", "--bind_ip_all"]
+    container_name: shard-a2
+    volumes:
+      - shard_a2_data:/data/db
+
+  shard_a3:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsA", "--port", "27018", "--bind_ip_all"]
+    container_name: shard-a3
+    volumes:
+      - shard_a3_data:/data/db
+
+  shard_b1:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsB", "--port", "27019", "--bind_ip_all"]
+    container_name: shard-b1
+    volumes:
+      - shard_b1_data:/data/db
+
+  shard_b2:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsB", "--port", "27019", "--bind_ip_all"]
+    container_name: shard-b2
+    volumes:
+      - shard_b2_data:/data/db
+
+  shard_b3:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsB", "--port", "27019", "--bind_ip_all"]
+    container_name: shard-b3
+    volumes:
+      - shard_b3_data:/data/db
+
+  router:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    container_name: mongos-router-repl
+    depends_on:
+      - cfgnode
+      - shard_a1
+      - shard_a2
+      - shard_a3
+      - shard_b1
+      - shard_b2
+      - shard_b3
+    command: ["mongos", "--configdb", "cfgAlpha/cfgnode:27017", "--bind_ip_all"]
+    ports:
+      - 27021:27017
+
+  webapi:
+    image: kazhem/pymongo_api:1.0.0
+    container_name: pymongo_api_repl
+    depends_on:
+      - router
+    environment:
+      MONGODB_URL: "mongodb://router:27017"
+      MONGODB_DATABASE_NAME: "somedb"
+    ports:
+      - 8081:8080
+
+volumes:
+  cfg_repl_data:
+  shard_a1_data:
+  shard_a2_data:
+  shard_a3_data:
+  shard_b1_data:
+  shard_b2_data:
+  shard_b3_data: 

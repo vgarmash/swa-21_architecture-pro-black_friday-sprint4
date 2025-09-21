@@ -1,0 +1,108 @@
+<mxfile host="app.diagrams.net" modified="2025-09-18T00:30:00.000Z" agent="5.0" version="24.7.10">
+  <diagram id="repl" name="Sharding+Replication">
+    <mxGraphModel dx="1700" dy="950" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title2" value="Sharding + Replication (3 nodes per shard)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="620" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="app2" value="pymongo-api" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="260" width="280" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="mongos2" value="mongos (router)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="480" y="260" width="280" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="config2" value="configSrv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="100" width="300" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="g1" value="Shard1 RS" style="swimlane=1;rounded=1;html=1;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;fillColor=#eaf4ea;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="250" width="760" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="s1p" value="shard1-1 (Primary)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#3c803f;" vertex="1" parent="g1">
+          <mxGeometry x="10" y="48" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="s1s1" value="shard1-2 (Secondary)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#82b366;" vertex="1" parent="g1">
+          <mxGeometry x="260" y="48" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="s1s2" value="shard1-3 (Secondary)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#82b366;" vertex="1" parent="g1">
+          <mxGeometry x="510" y="48" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="g2" value="Shard2 RS" style="swimlane=1;rounded=1;html=1;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;fillColor=#eaf4ea;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="510" width="760" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="s2p" value="shard2-1 (Primary)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#3c803f;" vertex="1" parent="g2">
+          <mxGeometry x="10" y="48" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="s2s1" value="shard2-2 (Secondary)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#82b366;" vertex="1" parent="g2">
+          <mxGeometry x="260" y="48" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="s2s2" value="shard2-3 (Secondary)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#82b366;" vertex="1" parent="g2">
+          <mxGeometry x="510" y="48" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="er1" value="Mongo queries" edge="1" parent="1" source="app2" target="mongos2" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#6c8ebf;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="-80" y="-20"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="er2" value="Cluster metadata" edge="1" parent="1" source="mongos2" target="config2" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#d79b00;dashed=1;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1100" y="220"/>
+              <mxPoint x="1500" y="150"/>
+            </Array>
+            <mxPoint as="offset" x="-120" y="-30"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="er3" value="Writes → Primary" edge="1" parent="1" source="mongos2" target="s1p" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#3c803f;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1320" y="300"/>
+            </Array>
+            <mxPoint as="offset" x="-80" y="-30"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="er4" value="Reads → Secondary" edge="1" parent="1" source="mongos2" target="s1s1" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#82b366;dashed=1;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1320" y="330"/>
+            </Array>
+            <mxPoint as="offset" x="-80" y="-30"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="er5" value="Reads → Secondary" edge="1" parent="1" source="mongos2" target="s1s2" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#82b366;dashed=1;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1320" y="360"/>
+            </Array>
+            <mxPoint as="offset" x="-80" y="-30"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="er6" value="Writes → Primary" edge="1" parent="1" source="mongos2" target="s2p" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#3c803f;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1320" y="570"/>
+            </Array>
+            <mxPoint as="offset" x="-80" y="-30"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="er7" value="Reads → Secondary" edge="1" parent="1" source="mongos2" target="s2s1" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#82b366;dashed=1;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1320" y="600"/>
+            </Array>
+            <mxPoint as="offset" x="-80" y="-30"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="er8" value="Reads → Secondary" edge="1" parent="1" source="mongos2" target="s2s2" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#82b366;dashed=1;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1320" y="630"/>
+            </Array>
+            <mxPoint as="offset" x="-80" y="-30"/>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile> 
