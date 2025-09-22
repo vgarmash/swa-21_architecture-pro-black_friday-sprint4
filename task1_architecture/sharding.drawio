@@ -1,0 +1,53 @@
+<mxfile host="app.diagrams.net" modified="2025-09-18T00:24:00.000Z" agent="5.0" version="24.7.10">
+  <diagram id="sharding" name="Sharding">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title1" value="Sharding (2 shards)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="300" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="app" value="pymongo-api" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="220" width="260" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="mongos" value="mongos (router)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="420" y="220" width="260" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="config" value="configSrv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="100" width="280" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="shard1" value="shard1 (mongod:27018)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="230" width="320" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="shard2" value="shard2 (mongod:27019)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="350" width="320" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" value="Mongo queries" edge="1" parent="1" source="app" target="mongos" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#6c8ebf;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" value="Cluster metadata" edge="1" parent="1" source="mongos" target="config" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#d79b00;dashed=1;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="860" y="200"/>
+              <mxPoint x="1080" y="160"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" value="Route by chunks" edge="1" parent="1" source="mongos" target="shard1" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#82b366;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1000" y="265"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" value="Route by chunks" edge="1" parent="1" source="mongos" target="shard2" style="endArrow=classic;edgeStyle=orthogonalEdgeStyle;strokeWidth=2;strokeColor=#82b366;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1000" y="385"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile> 

@@ -1,0 +1,28 @@
+@startuml
+' Products collection schema
+skinparam monochrome true
+skinparam classAttributeIconSize 0
+
+entity "products" as products {
+  + _id: string <<PK>>
+  -- fields --
+  name: string
+  category: string
+  price.amount: number
+  price.currency: string
+  stock_by_zone[*].geo: string
+  stock_by_zone[*].qty: int
+  attrs: map
+  updated_at: datetime
+  -- sharding & indexes --
+  <<shard_key>> category: 1, _id: hashed
+  <<index>> { category: 1, price.amount: 1 }
+  <<index>> { stock_by_zone.geo: 1 }
+}
+
+note right of products
+Strategy: Category-prefixed + hashed _id.
+- Locality for catalog queries by category
+- Even spread inside category using hashed _id
+end note
+@enduml 

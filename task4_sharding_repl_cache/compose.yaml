@@ -1,0 +1,90 @@
+name: sharding-repl-cache
+
+services:
+  cfgnode:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--configsvr", "--replSet", "cfgAlpha", "--port", "27017", "--bind_ip_all"]
+    container_name: cfg-cache
+    volumes:
+      - cfg_cache_data:/data/db
+
+  shard_a1:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsA", "--port", "27018", "--bind_ip_all"]
+    container_name: shard-a1-cache
+    volumes:
+      - shard_a1_cache:/data/db
+  shard_a2:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsA", "--port", "27018", "--bind_ip_all"]
+    container_name: shard-a2-cache
+    volumes:
+      - shard_a2_cache:/data/db
+  shard_a3:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsA", "--port", "27018", "--bind_ip_all"]
+    container_name: shard-a3-cache
+    volumes:
+      - shard_a3_cache:/data/db
+
+  shard_b1:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsB", "--port", "27019", "--bind_ip_all"]
+    container_name: shard-b1-cache
+    volumes:
+      - shard_b1_cache:/data/db
+  shard_b2:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsB", "--port", "27019", "--bind_ip_all"]
+    container_name: shard-b2-cache
+    volumes:
+      - shard_b2_cache:/data/db
+  shard_b3:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsB", "--port", "27019", "--bind_ip_all"]
+    container_name: shard-b3-cache
+    volumes:
+      - shard_b3_cache:/data/db
+
+  router:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    container_name: mongos-router-cache
+    depends_on:
+      - cfgnode
+      - shard_a1
+      - shard_a2
+      - shard_a3
+      - shard_b1
+      - shard_b2
+      - shard_b3
+    command: ["mongos", "--configdb", "cfgAlpha/cfgnode:27017", "--bind_ip_all"]
+    ports:
+      - 27022:27017
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - 6379:6379
+
+  webapi:
+    image: kazhem/pymongo_api:1.0.0
+    container_name: pymongo_api_cache
+    depends_on:
+      - router
+      - redis
+    environment:
+      MONGODB_URL: "mongodb://router:27017"
+      MONGODB_DATABASE_NAME: "somedb"
+      REDIS_URL: "redis://redis:6379"
+    ports:
+      - 8082:8080
+
+volumes:
+  cfg_cache_data:
+  shard_a1_cache:
+  shard_a2_cache:
+  shard_a3_cache:
+  shard_b1_cache:
+  shard_b2_cache:
+  shard_b3_cache: 

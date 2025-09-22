@@ -1,0 +1,30 @@
+@startuml
+' Carts collection schema
+skinparam monochrome true
+skinparam classAttributeIconSize 0
+
+entity "carts" as carts {
+  + _id: string <<PK>>
+  -- fields --
+  user_id: string?
+  session_id: string?
+  session_or_user: string  ' denormalized owner key
+  items[*].product_id: string
+  items[*].quantity: int
+  status: "active|ordered|abandoned"
+  created_at: datetime
+  updated_at: datetime
+  expires_at: datetime <<TTL>>
+  -- sharding & indexes --
+  <<shard_key>> status: 1, session_or_user: 1
+  <<index>> { status: 1, session_or_user: 1 } unique, partial (status: "active")
+  <<index>> { expires_at: 1 } TTL
+}
+
+note right of carts
+Strategy: Owner-based for active carts.
+- Lookup by {status:"active", owner} hits one shard
+- Even spread by random session_id / user_id
+- TTL cleans abandoned carts automatically
+end note
+@enduml 

@@ -1,0 +1,50 @@
+name: mongo-sharding
+
+services:
+  cfgnode:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--configsvr", "--replSet", "cfgAlpha", "--port", "27017", "--bind_ip_all"]
+    container_name: cfgalpha
+    volumes:
+      - cfgalpha_data:/data/db
+
+  shard_a:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsA", "--port", "27018", "--bind_ip_all"]
+    container_name: shard-a
+    volumes:
+      - shard_a_data:/data/db
+
+  shard_b:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    command: ["mongod", "--shardsvr", "--replSet", "rsB", "--port", "27019", "--bind_ip_all"]
+    container_name: shard-b
+    volumes:
+      - shard_b_data:/data/db
+
+  router:
+    image: dh-mirror.gitverse.ru/mongo:6.0
+    container_name: mongos-router
+    depends_on:
+      - cfgnode
+      - shard_a
+      - shard_b
+    command: ["mongos", "--configdb", "cfgAlpha/cfgnode:27017", "--bind_ip_all"]
+    ports:
+      - 27020:27017
+
+  webapi:
+    image: kazhem/pymongo_api:1.0.0
+    container_name: pymongo_api_sharded
+    depends_on:
+      - router
+    environment:
+      MONGODB_URL: "mongodb://router:27017"
+      MONGODB_DATABASE_NAME: "somedb"
+    ports:
+      - 8080:8080
+
+volumes:
+  cfgalpha_data:
+  shard_a_data:
+  shard_b_data: 
