@@ -1,0 +1,89 @@
+@startuml Component Diagram for MongoDB Cluster
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+title Component Diagram for MongoDB Cluster - "Мобильный мир"
+
+' -- Внешние контейнеры для контекста --
+Container(app_services, "Микросервисы", "Java/Go/Node.js", "Бизнес-логика онлайн-магазина (заказы, каталог, корзина)")
+Container(load_balancer, "Балансировщик", "Nginx/HAProxy", "Распределяет запросы между роутерами")
+
+' =======================================
+' Query Router Layer (Слой маршрутизации запросов)
+' =======================================
+System_Boundary(query_layer, "Query Router Layer (слой маршрутизации)") {
+    Component(mongos1, "mongos-1", "MongoDB router", "Маршрутизатор запросов, определяет целевой шард")
+    Component(mongos2, "mongos-2", "MongoDB router", "Маршрутизатор запросов (резервный)")
+    Component(mongos3, "mongos-3", "MongoDB router", "Маршрутизатор запросов (резервный)")
+}
+
+' =======================================
+' Shard 1 - Orders & General Data
+' =======================================
+System_Boundary(shard1_rs, "Shard 1 Replica Set (заказы и общие данные)") {
+    ComponentDb(rs1_primary, "rs1-primary", "MongoDB", "Основной узел для записи, хранит часть orders и carts")
+    ComponentDb(rs1_secondary1, "rs1-secondary1", "MongoDB", "Реплика для чтения и резервирования")
+    ComponentDb(rs1_secondary2, "rs1-secondary2", "MongoDB", "Реплика для чтения и резервирования")
+}
+
+' =======================================
+' Shard 2 - Products & Categories
+' =======================================
+System_Boundary(shard2_rs, "Shard 2 Replica Set (товары и категории)") {
+    ComponentDb(rs2_primary, "rs2-primary", "MongoDB", "Основной узел, хранит products (кроме электроники)")
+    ComponentDb(rs2_secondary1, "rs2-secondary1", "MongoDB", "Реплика для чтения и резервирования")
+    ComponentDb(rs2_secondary2, "rs2-secondary2", "MongoDB", "Реплика для чтения и резервирования")
+}
+
+' =======================================
+' Shard 3 - Hot Data (Electronics)
+' =======================================
+System_Boundary(shard3_rs, "Shard 3 Replica Set (горячие данные - электроника)") {
+    ComponentDb(rs3_primary, "rs3-primary", "MongoDB", "Основной узел, выделен под категорию электроники")
+    ComponentDb(rs3_secondary1, "rs3-secondary1", "MongoDB", "Реплика для чтения и резервирования")
+    ComponentDb(rs3_secondary2, "rs3-secondary2", "MongoDB", "Реплика для чтения и резервирования")
+}
+
+' =======================================
+' Config Servers
+' =======================================
+System_Boundary(config_servers, "Config Servers Replica Set (серверы конфигурации)") {
+    ComponentDb(cfg_primary, "cfg-primary", "MongoDB config", "Хранит метаданные кластера и мэппинги")
+    ComponentDb(cfg_secondary1, "cfg-secondary1", "MongoDB config", "Реплика метаданных кластера")
+    ComponentDb(cfg_secondary2, "cfg-secondary2", "MongoDB config", "Реплика метаданных кластера")
+}
+
+' -- Связи (Relationships) --
+
+' Связи от приложений к mongos
+Rel(app_services, load_balancer, "Запросы к БД", "MongoDB protocol")
+Rel(load_balancer, mongos1, "Распределяет запросы", "MongoDB protocol")
+Rel(load_balancer, mongos2, "Распределяет запросы", "MongoDB protocol")
+Rel(load_balancer, mongos3, "Распределяет запросы", "MongoDB protocol")
+
+' Связи от mongos к Config Servers
+Rel(mongos1, cfg_primary, "Читает метаданные", "MongoDB protocol")
+Rel(mongos2, cfg_primary, "Читает метаданные", "MongoDB protocol")
+Rel(mongos3, cfg_primary, "Читает метаданные", "MongoDB protocol")
+
+' Связи от mongos к шардам (targeted queries)
+Rel(mongos1, rs1_primary, "Маршрутизирует запросы orders/carts", "MongoDB protocol")
+Rel(mongos1, rs2_primary, "Маршрутизирует запросы products", "MongoDB protocol")
+Rel(mongos1, rs3_primary, "Маршрутизирует запросы Электроника", "MongoDB protocol")
+
+' Репликация внутри Shard 1
+Rel_R(rs1_primary, rs1_secondary1, "Репликация", "MongoDB replication")
+Rel_R(rs1_primary, rs1_secondary2, "Репликация", "MongoDB replication")
+
+' Репликация внутри Shard 2
+Rel_R(rs2_primary, rs2_secondary1, "Репликация", "MongoDB replication")
+Rel_R(rs2_primary, rs2_secondary2, "Репликация", "MongoDB replication")
+
+' Репликация внутри Shard 3
+Rel_R(rs3_primary, rs3_secondary1, "Репликация", "MongoDB replication")
+Rel_R(rs3_primary, rs3_secondary2, "Репликация", "MongoDB replication")
+
+' Репликация Config Servers
+Rel_R(cfg_primary, cfg_secondary1, "Репликация метаданных", "MongoDB replication")
+Rel_R(cfg_primary, cfg_secondary2, "Репликация метаданных", "MongoDB replication")
+
+@enduml

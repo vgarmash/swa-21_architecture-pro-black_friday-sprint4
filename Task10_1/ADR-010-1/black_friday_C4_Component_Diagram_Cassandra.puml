@@ -1,0 +1,79 @@
+@startuml Component Diagram for Cassandra Cluster
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+title Component Diagram for Cassandra Cluster
+
+' -- Внешние контейнеры для контекста --
+Container(app_services, "Онлайн-магазин", "Go/Java/Node.js", "Бизнес-логика онлайн-магазина (корзины, сессии, архив)")
+Container(load_balancer, "Балансировщик", "Nginx/HAProxy", "Распределяет запросы между координаторами")
+
+' =======================================
+' Cassandra Coordinator Nodes (координаторы)
+' =======================================
+System_Boundary(coordinator_layer, "Coordinator Layer (слой координации)") {
+    Component(coordinator1, "coordinator1", "Cassandra node", "Координатор запросов, определяет узлы-реплики")
+    Component(coordinator2, "coordinator2", "Cassandra node", "Координатор запросов (резервный)")
+    Component(coordinator3, "coordinator3", "Cassandra node", "Координатор запросов (резервный)")
+}
+
+' =======================================
+' Data Center 1 - Moscow (основной ЦОД)
+' =======================================
+System_Boundary(dc1_moscow, "Data Center 1 - Moscow") {
+    ComponentDb(dc1_node1, "dc1-node1", "Cassandra", "Узел данных, хранит партиции корзин/сессий")
+    ComponentDb(dc1_node2, "dc1-node2", "Cassandra", "Узел данных, реплика партиций")
+    ComponentDb(dc1_node3, "dc1-node3", "Cassandra", "Узел данных, реплика партиций")
+}
+
+' =======================================
+' Data Center 2 - Samara (резервный ЦОД)
+' =======================================
+System_Boundary(dc2_samara, "Data Center 2 - Samara") {
+    ComponentDb(dc2_node1, "dc2-node1", "Cassandra", "Узел данных, кросс-DC реплика")
+    ComponentDb(dc2_node2, "dc2-node2", "Cassandra", "Узел данных, кросс-DC реплика")
+    ComponentDb(dc2_node3, "dc2-node3", "Cassandra", "Узел данных, кросс-DC реплика")
+}
+
+' =======================================
+' Archive Ring - Historical Data (архивные данные)
+' =======================================
+System_Boundary(archive_ring, "Archive Ring (кольцо архивных данных)") {
+    ComponentDb(archive_node1, "archive-node1", "Cassandra", "Узел архива, хранит историю заказов")
+    ComponentDb(archive_node2, "archive-node2", "Cassandra", "Узел архива, реплика истории")
+    ComponentDb(archive_node3, "archive-node3", "Cassandra", "Узел архива, реплика истории")
+}
+
+' -- Связи (Relationships) --
+
+' Связи от приложений к координаторам
+Rel(app_services, load_balancer, "CQL запросы", "Native protocol")
+Rel(load_balancer, coordinator1, "Распределяет запросы", "CQL/9042")
+Rel(load_balancer, coordinator2, "Распределяет запросы", "CQL/9042")
+Rel(load_balancer, coordinator3, "Распределяет запросы", "CQL/9042")
+
+' Связи от координаторов к узлам данных (consistent hashing)
+Rel(coordinator1, dc1_node1, "Запись/чтение партиций", "Gossip + CQL")
+Rel(coordinator1, dc1_node2, "Запись/чтение реплик", "Gossip + CQL")
+Rel(coordinator1, dc1_node3, "Запись/чтение реплик", "Gossip + CQL")
+
+' Кросс-DC репликация
+Rel_R(dc1_node1, dc2_node1, "Асинхронная репликация", "Репликация между DC")
+Rel_R(dc1_node2, dc2_node2, "Асинхронная репликация", "Репликация между DC")
+Rel_R(dc1_node3, dc2_node3, "Асинхронная репликация", "Репликация между DC")
+
+' Связи с архивным кольцом
+Rel(coordinator1, archive_node1, "Запись архивных данных", "CQL")
+Rel(coordinator1, archive_node2, "Чтение истории", "CQL")
+Rel(coordinator1, archive_node3, "Чтение истории", "CQL")
+
+' Gossip протокол между всеми узлами (показываем частично для читаемости)
+Rel_L(dc1_node1, dc1_node2, "Gossip", "Состояние кластера")
+Rel_L(dc1_node2, dc1_node3, "Gossip", "Состояние кластера")
+Rel_L(dc2_node1, dc2_node2, "Gossip", "Состояние кластера")
+Rel_L(archive_node1, archive_node2, "Gossip", "Состояние кластера")
+
+' Репликация внутри архивного кольца
+Rel_R(archive_node1, archive_node2, "Репликация", "Quorum writes")
+Rel_R(archive_node2, archive_node3, "Репликация", "Quorum writes")
+
+@enduml
