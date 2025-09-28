@@ -12,7 +12,7 @@ ADR-010-1: Миграция на Cassandra для критически важн�
 
 ### <a name="_qmphm5d6rvi3"></a>**Решение**
 
-#### [Диаграмма компонентов C4](https://github.com/kotenev/architecture-pro-black_friday/blob/mobileworld/Task10.1/ADR-010-1/black_friday_C4_Component_Diagram_Cassandra.puml)
+#### [Диаграмма компонентов C4](https://github.com/kotenev/architecture-pro-black_friday/blob/mobileworld/Task10-1/ADR-010-1/black_friday_C4_Component_Diagram_Cassandra.puml)
 
 #### Классификация данных по критичности
 
