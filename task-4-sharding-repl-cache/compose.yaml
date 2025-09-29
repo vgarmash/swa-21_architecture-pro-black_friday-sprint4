@@ -1,0 +1,232 @@
+name: sharding-repl-cache
+
+services:
+  redis_1:
+    image: redis:7
+    container_name: redis_1
+    volumes:
+      - redis_1_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.2
+
+  redis_2:
+    image: redis:7
+    container_name: redis_2
+    volumes:
+      - redis_2_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.3
+
+  redis_3:
+    image: redis:7
+    container_name: redis_3
+    volumes:
+      - redis_3_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.4
+
+  redis_4:
+    image: redis:7
+    container_name: redis_4
+    volumes:
+      - redis_4_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.5
+
+  redis_5:
+    image: redis:7
+    container_name: redis_5
+    volumes:
+      - redis_5_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.6
+
+  redis_6:
+    image: redis:7
+    container_name: redis_6
+    volumes:
+      - redis_6_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.7
+
+  # -------- CONFIG SERVERS (Replica Set: configReplSet) --------
+  configsvr1:
+    image: mongo:7
+    restart: always
+    volumes: [ "config1-data:/data/db" ]
+    command: ["mongod","--configsvr","--replSet","configReplSet","--bind_ip_all","--port","27017"]
+    healthcheck:
+      test: ["CMD","mongosh","--host","configsvr1","--port","27017","--quiet","--eval","db.adminCommand({ ping: 1 })"]
+      interval: 5s
+      start_period: 10s
+
+  configsvr2:
+    image: mongo:7
+    restart: always
+    volumes: [ "config2-data:/data/db" ]
+    command: ["mongod","--configsvr","--replSet","configReplSet","--bind_ip_all","--port","27017"]
+    healthcheck:
+      test: ["CMD","mongosh","--host","configsvr2","--port","27017","--quiet","--eval","db.adminCommand({ ping: 1 })"]
+      interval: 5s
+      start_period: 10s
+
+  configsvr3:
+    image: mongo:7
+    restart: always
+    volumes: [ "config3-data:/data/db" ]
+    command: ["mongod","--configsvr","--replSet","configReplSet","--bind_ip_all","--port","27017"]
+    healthcheck:
+      test: ["CMD","mongosh","--host","configsvr3","--port","27017","--quiet","--eval","db.adminCommand({ ping: 1 })"]
+    # можно добавить interval/start_period по желанию
+
+  # -------- SHARD 1 (Replica Set: rsShard1) --------
+  shard1-1:
+    image: mongo:7
+    restart: always
+    volumes: [ "shard11-data:/data/db" ]
+    command: ["mongod","--shardsvr","--replSet","rsShard1","--bind_ip_all","--port","27018"]
+    healthcheck:
+      test: ["CMD","mongosh","--host","shard1-1","--port","27018","--quiet","--eval","db.adminCommand({ ping: 1 })"]
+
+  shard1-2:
+    image: mongo:7
+    restart: always
+    volumes: [ "shard12-data:/data/db" ]
+    command: ["mongod","--shardsvr","--replSet","rsShard1","--bind_ip_all","--port","27018"]
+    healthcheck:
+      test: ["CMD","mongosh","--host","shard1-2","--port","27018","--quiet","--eval","db.adminCommand({ ping: 1 })"]
+
+  shard1-3:
+    image: mongo:7
+    restart: always
+    volumes: [ "shard13-data:/data/db" ]
+    command: ["mongod","--shardsvr","--replSet","rsShard1","--bind_ip_all","--port","27018"]
+    healthcheck:
+      test: ["CMD","mongosh","--host","shard1-3","--port","27018","--quiet","--eval","db.adminCommand({ ping: 1 })"]
+
+  # -------- SHARD 2 (Replica Set: rsShard2) --------
+  shard2-1:
+    image: mongo:7
+    restart: always
+    volumes: [ "shard21-data:/data/db" ]
+    command: ["mongod","--shardsvr","--replSet","rsShard2","--bind_ip_all","--port","27019"]
+    healthcheck:
+      test: ["CMD","mongosh","--host","shard2-1","--port","27019","--quiet","--eval","db.adminCommand({ ping: 1 })"]
+
+  shard2-2:
+    image: mongo:7
+    restart: always
+    volumes: [ "shard22-data:/data/db" ]
+    command: ["mongod","--shardsvr","--replSet","rsShard2","--bind_ip_all","--port","27019"]
+    healthcheck:
+      test: ["CMD","mongosh","--host","shard2-2","--port","27019","--quiet","--eval","db.adminCommand({ ping: 1 })"]
+
+  shard2-3:
+    image: mongo:7
+    restart: always
+    volumes: [ "shard23-data:/data/db" ]
+    command: ["mongod","--shardsvr","--replSet","rsShard2","--bind_ip_all","--port","27019"]
+    healthcheck:
+      test: ["CMD","mongosh","--host","shard2-3","--port","27019","--quiet","--eval","db.adminCommand({ ping: 1 })"]
+
+  # -------- MONGOS ROUTERS (2 шт для HA) --------
+  mongos1:
+    image: mongo:7
+    restart: always
+    ports: [ "27020:27020" ]
+    command: ["mongos","--configdb","configReplSet/configsvr1:27017,configsvr2:27017,configsvr3:27017","--bind_ip_all","--port","27020"]
+    depends_on:
+      - configsvr1
+      - configsvr2
+      - configsvr3
+      - shard1-1
+      - shard1-2
+      - shard1-3
+      - shard2-1
+      - shard2-2
+      - shard2-3
+    healthcheck:
+      test: ["CMD","mongosh","--host","mongos1","--port","27020","--quiet","--eval","db.adminCommand({ ping: 1 })"]
+
+  mongos2:
+    image: mongo:7
+    restart: always
+    ports: [ "27021:27021" ]
+    command: ["mongos","--configdb","configReplSet/configsvr1:27017,configsvr2:27017,configsvr3:27017","--bind_ip_all","--port","27021"]
+    depends_on:
+      - configsvr1
+      - configsvr2
+      - configsvr3
+      - shard1-1
+      - shard1-2
+      - shard1-3
+      - shard2-1
+      - shard2-2
+      - shard2-3
+    healthcheck:
+      test: ["CMD","mongosh","--host","mongos2","--port","27021","--quiet","--eval","db.adminCommand({ ping: 1 })"]
+
+  # -------- API APP --------
+  api_app:
+    build:
+      context: ./api_app
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - mongos1
+      - mongos2
+    environment:
+      # подключаемся сразу к двум mongos (HA)
+      MONGODB_URL: "mongodb://mongos1:27020,mongos2:27021/"
+      MONGODB_DATABASE_NAME: "somedb"
+      REDIS_URL: "redis://redis_1:6379"   
+
+    ports:
+      - "8080:8080"
+
+    networks:
+      - default        
+      - app-network    
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 173.17.0.0/16
+
+volumes:
+  redis_1_data:
+  redis_2_data:
+  redis_3_data:
+  redis_4_data:
+  redis_5_data:
+  redis_6_data:
+  config1-data:
+  config2-data:
+  config3-data:
+  shard11-data:
+  shard12-data:
+  shard13-data:
+  shard21-data:
+  shard22-data:
+  shard23-data:
