@@ -1,13 +1,15 @@
-## Запуск 
+## 1. Запуск проекта
 
 ```bash
 docker compose up -d --build
 docker compose ps
 ```
 
-## Инициализация 
+---
 
-### Config Server RS
+## 2. Настройка кластера MongoDB
+
+### 2.1. Репликация для config servers
 ```bash
 docker compose exec -T configsvr1 mongosh --port 27017 --quiet <<'EOF'
 rs.initiate({
@@ -22,7 +24,7 @@ rs.initiate({
 EOF
 ```
 
-### Shard 1 RS
+### 2.2. Репликация для шардов
 ```bash
 docker compose exec -T shard1-1 mongosh --port 27018 --quiet <<'EOF'
 rs.initiate({
@@ -34,10 +36,7 @@ rs.initiate({
   ]
 });
 EOF
-```
 
-### Shard 2 RS
-```bash
 docker compose exec -T shard2-1 mongosh --port 27019 --quiet <<'EOF'
 rs.initiate({
   _id: "rsShard2",
@@ -50,18 +49,15 @@ rs.initiate({
 EOF
 ```
 
-## Подключение шардов и включение шардирования 
-
-### Добавить оба шард-репликасета
+### 2.3. Добавляем шарды через mongos
 ```bash
 docker compose exec -T mongos1 mongosh --port 27020 --quiet <<'EOF'
 sh.addShard("rsShard1/shard1-1:27018,shard1-2:27018,shard1-3:27018");
 sh.addShard("rsShard2/shard2-1:27019,shard2-2:27019,shard2-3:27019");
-sh.status();
 EOF
 ```
 
-### Включить шардирование БД и коллекции
+### 2.4. Включаем шардирование для базы и коллекции
 ```bash
 docker compose exec -T mongos1 mongosh --port 27020 --quiet <<'EOF'
 sh.enableSharding("somedb");
@@ -69,8 +65,9 @@ sh.shardCollection("somedb.helloDoc", { _id: "hashed" });
 EOF
 ```
 
+---
 
-## Загрузка данных
+## 3. Засев данных
 
 ```bash
 docker compose exec -T mongos1 mongosh --port 27020 --quiet <<'EOF'
@@ -82,15 +79,40 @@ print("Total docs:", db.helloDoc.countDocuments());
 EOF
 ```
 
+---
 
-## Проверки через HTTP API приложения
+## 4. Redis Cluster
 
-### Топология и наличие коллекции
+```bash
+docker exec -i redis_1 sh -lc 'echo "yes" | redis-cli --cluster create \
+  173.17.0.2:6379 173.17.0.3:6379 173.17.0.4:6379 \
+  173.17.0.5:6379 173.17.0.6:6379 173.17.0.7:6379 \
+  --cluster-replicas 1'
+docker exec -it redis_1 redis-cli cluster nodes
+```
+
+Ожидаем 6 узлов: 3 master, 3 slave.
+
+---
+
+## 5. Проверка приложения
+
+### 5.1. Корневой эндпоинт
 ```bash
 curl -s http://localhost:8080 | jq .
 ```
 
-### Общее количество документов
+### 5.2. Количество документов
 ```bash
 curl -s http://localhost:8080/helloDoc/count | jq .
 ```
+
+Ожидается `items_count: 1000`.
+
+### 5.3. Тест кэша
+```bash
+curl -o /dev/null -s -w 'first_total_ms=%{time_total}\n' http://localhost:8080/helloDoc/users
+curl -o /dev/null -s -w 'second_total_ms=%{time_total}\n' http://localhost:8080/helloDoc/users
+```
+
+Второй вызов существеннее быстрее первого!
