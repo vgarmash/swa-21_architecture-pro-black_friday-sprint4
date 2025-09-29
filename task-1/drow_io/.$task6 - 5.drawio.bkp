@@ -1,0 +1,205 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.1.2 Chrome/138.0.7204.243 Electron/37.4.0 Safari/537.36" version="28.1.2">
+  <diagram id="cdn-v5" name="CDN (Global PoPs + Origin + Gateway)">
+    <mxGraphModel dx="1426" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="user_eu" value="User (EU)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="60" y="180" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="user_us" value="User (US)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="60" y="260" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="user_apac" value="User (КГ)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="60" y="340" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn_dns" value="CDN (Anycast DNS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="210" y="250" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn_box" value="CDN PoPs" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;strokeColor=#d79b00;fillColor=#fff2cc;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" parent="1" vertex="1">
+          <mxGeometry x="420" y="150" width="380" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn_eu" value="CDN PoP EU" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+          <mxGeometry x="440" y="180" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn_us" value="CDN PoP US" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+          <mxGeometry x="440" y="250" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn_apac" value="CDN PoP APAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+          <mxGeometry x="440" y="320" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="origin" value="Static Origin (S3/Nginx)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="630" y="250" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="apigw" value="API Gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="820" y="540" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="redis" value="redis (cache)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+          <mxGeometry x="960" y="740" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="appbox" value="pymongo-api (x3)" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;strokeColor=#6c8ebf;fillColor=#dae8fc;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" parent="1" vertex="1">
+          <mxGeometry x="1030" y="480" width="260" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="app1" value="pymongo-api-1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="1050" y="500" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="app2" value="pymongo-api-2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="1050" y="550" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="app3" value="pymongo-api-3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="1050" y="600" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="mongos1" value="mongos1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+          <mxGeometry x="1340" y="500" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="mongos2" value="mongos2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+          <mxGeometry x="1340" y="600" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cfgBox" value="configReplSet" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;strokeColor=#d79b00;fillColor=#fff2cc;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" parent="1" vertex="1">
+          <mxGeometry x="1520" y="230" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="config1" value="configsvr1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#d79b00;" parent="1" vertex="1">
+          <mxGeometry x="1540" y="260" width="70" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="config2" value="configsvr2" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#d79b00;" parent="1" vertex="1">
+          <mxGeometry x="1615" y="260" width="70" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="config3" value="configsvr3" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#d79b00;" parent="1" vertex="1">
+          <mxGeometry x="1690" y="260" width="70" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="rs1box" value="rsShard1" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;strokeColor=#9673a6;fillColor=#f5f0fa;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" parent="1" vertex="1">
+          <mxGeometry x="1520" y="400" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s11" value="shard1-1 (Primary)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="1540" y="422.5" width="90" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="s12" value="shard1-2 (Secondary)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="1635" y="422.5" width="90" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="s13" value="shard1-3 (Secondary)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="1730" y="422.5" width="90" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="rs2box" value="rsShard2" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;strokeColor=#9673a6;fillColor=#f5f0fa;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" parent="1" vertex="1">
+          <mxGeometry x="1520" y="560" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s21" value="shard2-1 (Primary)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="1540" y="582.5" width="90" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="s22" value="shard2-2 (Secondary)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="1635" y="582.5" width="90" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="s23" value="shard2-3 (Secondary)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="1730" y="582.5" width="90" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="consulbox" value="Consul servers (3)" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;strokeColor=#b85450;fillColor=#f8cecc;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" parent="1" vertex="1">
+          <mxGeometry x="1030" y="280" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="consul1" value="consul1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#b85450;fillColor=#f8cecc;" parent="1" vertex="1">
+          <mxGeometry x="1050" y="300" width="70" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="consul2" value="consul2" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#b85450;fillColor=#f8cecc;" parent="1" vertex="1">
+          <mxGeometry x="1130" y="300" width="70" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="consul3" value="consul3" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#b85450;fillColor=#f8cecc;" parent="1" vertex="1">
+          <mxGeometry x="1210" y="300" width="70" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="u_eu_dns" style="endArrow=block;dashed=1;strokeWidth=2;" parent="1" source="user_eu" target="cdn_dns" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u_us_dns" style="endArrow=block;dashed=1;strokeWidth=2;" parent="1" source="user_us" target="cdn_dns" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u_apac_dns" style="endArrow=block;dashed=1;strokeWidth=2;" parent="1" source="user_apac" target="cdn_dns" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dns_to_eu" value="geo/latency" style="endArrow=block;strokeWidth=2;" parent="1" source="cdn_dns" target="cdn_eu" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dns_to_us" value="geo/latency" style="endArrow=block;strokeWidth=2;" parent="1" source="cdn_dns" target="cdn_us" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dns_to_apac" value="geo/latency" style="endArrow=block;strokeWidth=2;" parent="1" source="cdn_dns" target="cdn_apac" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eu_to_origin" value="static pull" style="endArrow=block;strokeWidth=2;" parent="1" source="cdn_eu" target="origin" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="us_to_origin" value="static pull" style="endArrow=block;strokeWidth=2;" parent="1" source="cdn_us" target="origin" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="apac_to_origin" value="static pull" style="endArrow=block;strokeWidth=2;" parent="1" source="cdn_apac" target="origin" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn_eu_to_gw" value="dynamic (bypass)" style="endArrow=block;dashed=1;strokeWidth=2;" parent="1" source="cdn_eu" target="apigw" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn_us_to_gw" value="dynamic (bypass)" style="endArrow=block;dashed=1;strokeWidth=2;" parent="1" source="cdn_us" target="apigw" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn_apac_to_gw" value="dynamic (bypass)" style="endArrow=block;dashed=1;strokeWidth=2;" parent="1" source="cdn_apac" target="apigw" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="egw1" style="endArrow=block;strokeWidth=2;" parent="1" source="apigw" target="app1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="egw2" style="endArrow=block;strokeWidth=2;" parent="1" source="apigw" target="app2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="egw3" style="endArrow=block;strokeWidth=2;" parent="1" source="apigw" target="app3" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eapp1r" style="endArrow=block;strokeWidth=2;" parent="1" source="app1" target="redis" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eapp2r" style="endArrow=block;strokeWidth=2;" parent="1" source="app2" target="redis" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eapp3r" style="endArrow=block;strokeWidth=2;" parent="1" source="app3" target="redis" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eapp1m1" style="endArrow=block;strokeWidth=2;" parent="1" source="app1" target="mongos1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eapp1m2" style="endArrow=block;strokeWidth=2;" parent="1" source="app1" target="mongos2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eapp2m1" style="endArrow=block;strokeWidth=2;" parent="1" source="app2" target="mongos1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eapp2m2" style="endArrow=block;strokeWidth=2;" parent="1" source="app2" target="mongos2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eapp3m1" style="endArrow=block;strokeWidth=2;" parent="1" source="app3" target="mongos1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eapp3m2" style="endArrow=block;strokeWidth=2;" parent="1" source="app3" target="mongos2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m1_cfg" style="endArrow=block;dashed=1;strokeWidth=2;" parent="1" source="mongos1" target="cfgBox" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m2_cfg" style="endArrow=block;dashed=1;strokeWidth=2;" parent="1" source="mongos2" target="cfgBox" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m1_rs1" style="endArrow=block;strokeWidth=2;" parent="1" source="mongos1" target="rs1box" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m1_rs2" style="endArrow=block;strokeWidth=2;" parent="1" source="mongos1" target="rs2box" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m2_rs1" style="endArrow=block;strokeWidth=2;" parent="1" source="mongos2" target="rs1box" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m2_rs2" style="endArrow=block;strokeWidth=2;" parent="1" source="mongos2" target="rs2box" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_gw_consul" value="SD (lookup)" style="endArrow=block;dashed=1;strokeWidth=2;" parent="1" source="apigw" target="consulbox" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_app1_consul" value="register/health" style="endArrow=block;dashed=1;strokeWidth=2;exitX=0.831;exitY=0.011;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" source="appbox" target="consulbox" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
