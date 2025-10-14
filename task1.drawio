@@ -110,4 +110,69 @@
             </root>
         </mxGraphModel>
     </diagram>
+    <diagram name="Stage 3" id="D9KvkZ8-_v1hm8vhqX45">
+        <mxGraphModel dx="759" dy="457" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="paki6UXgwFIfHElsqhIR-0"/>
+                <mxCell id="paki6UXgwFIfHElsqhIR-1" parent="paki6UXgwFIfHElsqhIR-0"/>
+                <mxCell id="paki6UXgwFIfHElsqhIR-2" style="edgeStyle=none;html=1;" edge="1" parent="paki6UXgwFIfHElsqhIR-1" source="paki6UXgwFIfHElsqhIR-9" target="paki6UXgwFIfHElsqhIR-12">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-3" style="edgeStyle=none;html=1;" edge="1" parent="paki6UXgwFIfHElsqhIR-1" source="paki6UXgwFIfHElsqhIR-9" target="paki6UXgwFIfHElsqhIR-13">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-4" style="edgeStyle=none;html=1;" edge="1" parent="paki6UXgwFIfHElsqhIR-1" source="paki6UXgwFIfHElsqhIR-9" target="paki6UXgwFIfHElsqhIR-14">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-5" style="edgeStyle=none;html=1;" edge="1" parent="paki6UXgwFIfHElsqhIR-1" source="paki6UXgwFIfHElsqhIR-9" target="paki6UXgwFIfHElsqhIR-16">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-6" style="edgeStyle=none;html=1;" edge="1" parent="paki6UXgwFIfHElsqhIR-1" source="paki6UXgwFIfHElsqhIR-9" target="paki6UXgwFIfHElsqhIR-15">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-7" style="edgeStyle=none;html=1;" edge="1" parent="paki6UXgwFIfHElsqhIR-1" source="paki6UXgwFIfHElsqhIR-9" target="paki6UXgwFIfHElsqhIR-17">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-8" style="edgeStyle=none;html=1;" edge="1" parent="paki6UXgwFIfHElsqhIR-1" source="paki6UXgwFIfHElsqhIR-9" target="paki6UXgwFIfHElsqhIR-18">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-9" value="MongoDB router" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="paki6UXgwFIfHElsqhIR-1">
+                    <mxGeometry x="240" y="410" width="60" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="O6c2vzZ-OFI5KM5BvLb7-5" style="edgeStyle=none;html=1;" edge="1" parent="paki6UXgwFIfHElsqhIR-1" source="paki6UXgwFIfHElsqhIR-10" target="paki6UXgwFIfHElsqhIR-9">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-10" value="pymongo-api" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="paki6UXgwFIfHElsqhIR-1">
+                    <mxGeometry x="40" y="540" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-12" value="MongoDB config server" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="paki6UXgwFIfHElsqhIR-1">
+                    <mxGeometry x="380" y="40" width="60" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-13" value="MongoDB shard 1&lt;div&gt;replica 1&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="paki6UXgwFIfHElsqhIR-1">
+                    <mxGeometry x="380" y="170" width="60" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-14" value="MongoDB&lt;div&gt;shard 2&lt;/div&gt;&lt;div&gt;replica 1&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="paki6UXgwFIfHElsqhIR-1">
+                    <mxGeometry x="380" y="570" width="60" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-15" value="MongoDB shard 1&lt;div&gt;replica 3&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="paki6UXgwFIfHElsqhIR-1">
+                    <mxGeometry x="380" y="440" width="60" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-16" value="MongoDB shard 1&lt;div&gt;replica 2&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="paki6UXgwFIfHElsqhIR-1">
+                    <mxGeometry x="380" y="300" width="60" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-17" value="MongoDB&lt;div&gt;shard 2&lt;/div&gt;&lt;div&gt;replica 2&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="paki6UXgwFIfHElsqhIR-1">
+                    <mxGeometry x="380" y="700" width="60" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="paki6UXgwFIfHElsqhIR-18" value="MongoDB&lt;div&gt;shard 2&lt;/div&gt;&lt;div&gt;replica 3&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="paki6UXgwFIfHElsqhIR-1">
+                    <mxGeometry x="380" y="830" width="60" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="O6c2vzZ-OFI5KM5BvLb7-2" value="Redis Cache" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="paki6UXgwFIfHElsqhIR-1">
+                    <mxGeometry x="240" y="700" width="60" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="O6c2vzZ-OFI5KM5BvLb7-3" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="paki6UXgwFIfHElsqhIR-1" source="paki6UXgwFIfHElsqhIR-10" target="O6c2vzZ-OFI5KM5BvLb7-2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>
