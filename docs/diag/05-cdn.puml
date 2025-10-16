@@ -1,0 +1,129 @@
+@startuml
+
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include p3-c4-styles.puml 
+
+skinparam dpi 144
+
+' Schema 5: CDN for Multi-Region Static Content Delivery
+' Global content distribution with edge caching
+
+' LAYOUT_WITH_LEGEND()
+
+
+title Multi-Region CDN for Static Content Delivery - Schema 5
+
+' Users from different regions
+Person(user_eu, "User EU", "European user")
+Person(user_us, "User US", "US user")
+Person(user_asia, "User Asia", "Asian user")
+
+' CDN Edge Nodes
+System_Boundary(cdn_network, "CDN Network") {
+  Container(cdn_eu, "CDN EU", "Edge Node", "CloudFlare/Cloudfront EU")
+  Container(cdn_us, "CDN US", "Edge Node", "CloudFlare/Cloudfront US")
+  Container(cdn_asia, "CDN Asia", "Edge Node", "CloudFlare/Cloudfront Asia")
+}
+
+' Origin Server for Static Content
+Container(static_origin, "Static Origin", "Nginx/S3", "Static assets storage")
+
+' API Gateway for load balancing
+Container(gateway, "API Gateway", "Kong/Nginx", "Load balancer & reverse proxy")
+
+' Consul for Service Discovery
+Container(consul, "Consul", "Service Registry", "Service discovery & health checks")
+
+' Multiple application instances
+Container_Boundary(api_cluster, "Application Cluster") {
+  Container(api1, "pymongo-api-1", "FastAPI", "App instance 1")
+  Container(api2, "pymongo-api-2", "FastAPI", "App instance 2")
+  Container(api3, "pymongo-api-3", "FastAPI", "App instance 3")
+}
+
+' Redis Cache
+ContainerDb(redis, "redis", "Redis", "In-memory cache")
+
+' MongoDB Router
+SystemDb(mongos, "mongos", "MongoDB Router", "Query router")
+
+' Config Servers (Replica Set)
+Container_Boundary(config_rs, "Config Server RS") {
+  ContainerDb(cfg1, "configSrv-1", "Config Primary", "Metadata storage")
+  ContainerDb(cfg2, "configSrv-2", "Config Secondary", "Metadata replica")
+  ContainerDb(cfg3, "configSrv-3", "Config Secondary", "Metadata replica")
+}
+
+' Shard 1 Replica Set
+Container_Boundary(shard1_rs, "Shard 1 RS") {
+  ContainerDb(shard1_1, "shard1-1", "MongoDB Primary", "Data partition 1")
+  ContainerDb(shard1_2, "shard1-2", "MongoDB Secondary", "Replica 1")
+  ContainerDb(shard1_3, "shard1-3", "MongoDB Secondary", "Replica 2")
+}
+
+' Shard 2 Replica Set
+Container_Boundary(shard2_rs, "Shard 2 RS") {
+  ContainerDb(shard2_1, "shard2-1", "MongoDB Primary", "Data partition 2")
+  ContainerDb(shard2_2, "shard2-2", "MongoDB Secondary", "Replica 1")
+  ContainerDb(shard2_3, "shard2-3", "MongoDB Secondary", "Replica 2")
+}
+
+' Users to CDN (static content)
+Rel(user_eu, cdn_eu, "GET static assets", "HTTPS")
+Rel(user_us, cdn_us, "GET static assets", "HTTPS")
+Rel(user_asia, cdn_asia, "GET static assets", "HTTPS")
+
+' CDN to Origin (on cache miss)
+Rel(cdn_eu, static_origin, "Pulls on cache miss", "HTTPS")
+Rel(cdn_us, static_origin, "Pulls on cache miss", "HTTPS")
+Rel(cdn_asia, static_origin, "Pulls on cache miss", "HTTPS")
+
+' Users to API Gateway (dynamic content)
+Rel(user_eu, gateway, "API requests", "HTTPS")
+Rel(user_us, gateway, "API requests", "HTTPS")
+Rel(user_asia, gateway, "API requests", "HTTPS")
+
+' Gateway to Consul (service discovery)
+Rel(gateway, consul, "Queries available instances", "HTTP API")
+
+' Gateway to app instances (load balanced)
+Rel(gateway, api1, "Routes traffic", "HTTP")
+Rel(gateway, api2, "Routes traffic", "HTTP")
+Rel(gateway, api3, "Routes traffic", "HTTP")
+
+' App instances register with Consul
+Rel(api1, consul, "Registers & sends health checks", "HTTP")
+Rel(api2, consul, "Registers & sends health checks", "HTTP")
+Rel(api3, consul, "Registers & sends health checks", "HTTP")
+
+' App instances to Redis
+Rel(api1, redis, "Cache operations", "TCP 6379")
+Rel(api2, redis, "Cache operations", "TCP 6379")
+Rel(api3, redis, "Cache operations", "TCP 6379")
+
+' App instances to MongoDB
+Rel(api1, mongos, "On cache miss", "MongoDB protocol")
+Rel(api2, mongos, "On cache miss", "MongoDB protocol")
+Rel(api3, mongos, "On cache miss", "MongoDB protocol")
+
+' MongoDB internal relationships
+Rel(mongos, config_rs, "Reads metadata (Replica Set)", "TCP 27019")
+Rel(mongos, shard1_rs, "Routes partitioned queries (primary elected)", "TCP 27018")
+Rel(mongos, shard2_rs, "Routes partitioned queries (primary elected)", "TCP 27018")
+
+' Config RS replication
+Rel(cfg1, cfg2, "Replicates", "Internal")
+Rel(cfg1, cfg3, "Replicates", "Internal")
+
+' Shard 1 RS replication
+Rel(shard1_1, shard1_2, "Replicates oplog", "Internal")
+Rel(shard1_1, shard1_3, "Replicates oplog", "Internal")
+
+' Shard 2 RS replication
+Rel(shard2_1, shard2_2, "Replicates oplog", "Internal")
+Rel(shard2_1, shard2_3, "Replicates oplog", "Internal")
+
+' SHOW_LEGEND()
+
+@enduml

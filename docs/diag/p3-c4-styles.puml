@@ -1,0 +1,409 @@
+' ============================================================================
+' P3 Dark Theme for C4-PlantUML
+' ============================================================================
+!$ROUNDED_BOX_SIZE = 12
+!$EIGHT_SIDED_SIZE = 0
+
+' ============================================================================
+' Цветовая палитра P3
+' ============================================================================
+!$C_BG = "#020617"
+!$C_SURFACE = "#0f172a"
+!$C_CARD = "#1e293b"
+!$C_TEXT = "#f1f5f9"
+!$C_MUTED = "#94a3b8"
+!$C_SUBTEXT = "#64748b"
+!$C_LINE = "#475569"
+!$C_PRIMARY = "#6366f1"
+!$C_VIOLET = "#7c3aed"
+!$C_VIOLET_LIGHT = "#c4b5fd"
+
+' ============================================================================
+' C4-PlantUML: Переменные элементов
+' ============================================================================
+!$ELEMENT_FONT_COLOR = "#f1f5f9"
+!$STEREOTYPE_FONT_SIZE = 11
+!$TECHN_FONT_SIZE = 12
+
+' ============================================================================
+' C4-PlantUML: Стрелки
+' ============================================================================
+!$ARROW_COLOR = "#6366f1"
+!$ARROW_FONT_COLOR = "#94a3b8"
+!$ARROW_FONT_SIZE = 12
+
+' ============================================================================
+' C4-PlantUML: Границы
+' ============================================================================
+!$BOUNDARY_COLOR = "#475569"
+!$BOUNDARY_BG_COLOR = "transparent"
+!$BOUNDARY_BORDER_STYLE = "dashed"
+
+' ============================================================================
+' C4-PlantUML: Person
+' ============================================================================
+!$PERSON_FONT_COLOR = "#0f172a"
+!$PERSON_BG_COLOR = "#c4b5fd"
+!$PERSON_BORDER_COLOR = "#7c3aed"
+!$EXTERNAL_PERSON_FONT_COLOR = "#0f172a"
+!$EXTERNAL_PERSON_BG_COLOR = "#8b5cf6"
+!$EXTERNAL_PERSON_BORDER_COLOR = "#7c3aed"
+
+' ============================================================================
+' C4-PlantUML: System
+' ============================================================================
+!$SYSTEM_FONT_COLOR = "#f1f5f9"
+!$SYSTEM_BG_COLOR = "#1e293b"
+!$SYSTEM_BORDER_COLOR = "#6366f1"
+!$EXTERNAL_SYSTEM_FONT_COLOR = "#f1f5f9"
+!$EXTERNAL_SYSTEM_BG_COLOR = "#1e293b"
+!$EXTERNAL_SYSTEM_BORDER_COLOR = "#7c3aed"
+
+' ============================================================================
+' C4-PlantUML: Container
+' ============================================================================
+!$CONTAINER_FONT_COLOR = "#f1f5f9"
+!$CONTAINER_BG_COLOR = "#1e293b"
+!$CONTAINER_BORDER_COLOR = "#475569"
+!$EXTERNAL_CONTAINER_FONT_COLOR = "#f1f5f9"
+!$EXTERNAL_CONTAINER_BG_COLOR = "#1e293b"
+!$EXTERNAL_CONTAINER_BORDER_COLOR = "#7c3aed"
+
+' ============================================================================
+' C4-PlantUML: Component
+' ============================================================================
+!$COMPONENT_FONT_COLOR = "#f1f5f9"
+!$COMPONENT_BG_COLOR = "#1e293b"
+!$COMPONENT_BORDER_COLOR = "#475569"
+!$EXTERNAL_COMPONENT_FONT_COLOR = "#f1f5f9"
+!$EXTERNAL_COMPONENT_BG_COLOR = "#1e293b"
+!$EXTERNAL_COMPONENT_BORDER_COLOR = "#7c3aed"
+
+' ============================================================================
+' C4-PlantUML: Database
+' ============================================================================
+!$SYSTEM_DB_FONT_COLOR = "#f1f5f9"
+!$SYSTEM_DB_BG_COLOR = "#0f172a"
+!$SYSTEM_DB_BORDER_COLOR = "#6366f1"
+!$CONTAINER_DB_FONT_COLOR = "#f1f5f9"
+!$CONTAINER_DB_BG_COLOR = "#0f172a"
+!$CONTAINER_DB_BORDER_COLOR = "#6366f1"
+!$COMPONENT_DB_FONT_COLOR = "#f1f5f9"
+!$COMPONENT_DB_BG_COLOR = "#0f172a"
+!$COMPONENT_DB_BORDER_COLOR = "#6366f1"
+
+' ============================================================================
+' C4-PlantUML: Queue
+' ============================================================================
+!$SYSTEM_QUEUE_FONT_COLOR = "#f1f5f9"
+!$SYSTEM_QUEUE_BG_COLOR = "#0f172a"
+!$SYSTEM_QUEUE_BORDER_COLOR = "#8b5cf6"
+!$CONTAINER_QUEUE_FONT_COLOR = "#f1f5f9"
+!$CONTAINER_QUEUE_BG_COLOR = "#0f172a"
+!$CONTAINER_QUEUE_BORDER_COLOR = "#8b5cf6"
+!$COMPONENT_QUEUE_FONT_COLOR = "#f1f5f9"
+!$COMPONENT_QUEUE_BG_COLOR = "#0f172a"
+!$COMPONENT_QUEUE_BORDER_COLOR = "#8b5cf6"
+
+' ============================================================================
+' C4-PlantUML: External Database
+' ============================================================================
+!$EXTERNAL_SYSTEM_DB_FONT_COLOR = "#f1f5f9"
+!$EXTERNAL_SYSTEM_DB_BG_COLOR = "#0f172a"
+!$EXTERNAL_SYSTEM_DB_BORDER_COLOR = "#7c3aed"
+!$EXTERNAL_CONTAINER_DB_FONT_COLOR = "#f1f5f9"
+!$EXTERNAL_CONTAINER_DB_BG_COLOR = "#0f172a"
+!$EXTERNAL_CONTAINER_DB_BORDER_COLOR = "#7c3aed"
+!$EXTERNAL_COMPONENT_DB_FONT_COLOR = "#f1f5f9"
+!$EXTERNAL_COMPONENT_DB_BG_COLOR = "#0f172a"
+!$EXTERNAL_COMPONENT_DB_BORDER_COLOR = "#7c3aed"
+
+' ============================================================================
+' C4-PlantUML: External Queue
+' ============================================================================
+!$EXTERNAL_SYSTEM_QUEUE_FONT_COLOR = "#f1f5f9"
+!$EXTERNAL_SYSTEM_QUEUE_BG_COLOR = "#0f172a"
+!$EXTERNAL_SYSTEM_QUEUE_BORDER_COLOR = "#7c3aed"
+!$EXTERNAL_CONTAINER_QUEUE_FONT_COLOR = "#f1f5f9"
+!$EXTERNAL_CONTAINER_QUEUE_BG_COLOR = "#0f172a"
+!$EXTERNAL_CONTAINER_QUEUE_BORDER_COLOR = "#7c3aed"
+!$EXTERNAL_COMPONENT_QUEUE_FONT_COLOR = "#f1f5f9"
+!$EXTERNAL_COMPONENT_QUEUE_BG_COLOR = "#0f172a"
+!$EXTERNAL_COMPONENT_QUEUE_BORDER_COLOR = "#7c3aed"
+
+' ============================================================================
+' C4-PlantUML: Node
+' ============================================================================
+!$NODE_FONT_COLOR = "#f1f5f9"
+!$NODE_BG_COLOR = "#1e293b"
+!$NODE_BORDER_COLOR = "#475569"
+
+' ============================================================================
+' C4-PlantUML: Legend
+' ============================================================================
+!$LEGEND_TITLE_COLOR = "#f1f5f9"
+!$LEGEND_FONT_COLOR = "#f1f5f9"
+!$LEGEND_BG_COLOR = "#1e293b"
+!$LEGEND_BORDER_COLOR = "#475569"
+
+' ============================================================================
+' CSS Styles: Детальная настройка
+' ============================================================================
+<style>
+  root {
+    BackgroundColor #020617
+    Shadowing 0
+  }
+
+  element {
+    FontColor #f1f5f9
+    FontSize 14
+    BackgroundColor #1e293b
+    LineColor #475569
+    LineThickness 2
+    RoundCorner 12
+    Shadowing 0
+    Padding 14
+  }
+
+  stereotype {
+    FontSize 11
+    FontColor #64748b
+    FontStyle italic
+  }
+
+  ' Person
+  .Person, .person {
+    BackgroundColor #c4b5fd
+    LineColor #7c3aed
+    LineThickness 2
+    FontColor #0f172a
+    FontSize 14
+    RoundCorner 12
+  }
+
+  .PersonExt, .external_person {
+    BackgroundColor #8b5cf6
+    LineColor #7c3aed
+    LineThickness 2
+    LineStyle 5
+    FontColor #0f172a
+  }
+
+  ' System
+  .System, .system {
+    BackgroundColor #1e293b
+    LineColor #6366f1
+    LineThickness 2
+    FontColor #f1f5f9
+    RoundCorner 12
+  }
+
+  .SystemExt, .external_system {
+    BackgroundColor #1e293b
+    LineColor #7c3aed
+    LineThickness 2
+    LineStyle 5
+    FontColor #f1f5f9
+  }
+
+  .SystemDb, .system_db {
+    BackgroundColor #0f172a
+    LineColor #6366f1
+    LineThickness 2
+    FontColor #f1f5f9
+  }
+
+  .SystemDbExt, .external_system_db {
+    BackgroundColor #0f172a
+    LineColor #7c3aed
+    LineThickness 2
+    LineStyle 5
+    FontColor #f1f5f9
+  }
+
+  .SystemQueue, .system_queue {
+    BackgroundColor #0f172a
+    LineColor #8b5cf6
+    LineThickness 2
+    FontColor #f1f5f9
+  }
+
+  ' Container
+  .Container, .container {
+    BackgroundColor #1e293b
+    LineColor #475569
+    LineThickness 2
+    FontColor #f1f5f9
+    RoundCorner 12
+  }
+
+  .ContainerExt, .external_container {
+    BackgroundColor #1e293b
+    LineColor #7c3aed
+    LineThickness 2
+    LineStyle 5
+    FontColor #f1f5f9
+  }
+
+  .ContainerDb, .container_db {
+    BackgroundColor #0f172a
+    LineColor #6366f1
+    LineThickness 2
+    FontColor #f1f5f9
+  }
+
+  .ContainerDbExt, .external_container_db {
+    BackgroundColor #0f172a
+    LineColor #7c3aed
+    LineThickness 2
+    LineStyle 5
+    FontColor #f1f5f9
+  }
+
+  .ContainerQueue, .container_queue {
+    BackgroundColor #0f172a
+    LineColor #8b5cf6
+    LineThickness 2
+    FontColor #f1f5f9
+  }
+
+  ' Component
+  .Component, .component {
+    BackgroundColor #1e293b
+    LineColor #475569
+    LineThickness 2
+    FontColor #f1f5f9
+    RoundCorner 12
+  }
+
+  .ComponentExt, .external_component {
+    BackgroundColor #1e293b
+    LineColor #7c3aed
+    LineThickness 2
+    LineStyle 5
+    FontColor #f1f5f9
+  }
+
+  .ComponentDb, .component_db {
+    BackgroundColor #0f172a
+    LineColor #6366f1
+    LineThickness 2
+    FontColor #f1f5f9
+  }
+
+  .ComponentQueue, .component_queue {
+    BackgroundColor #0f172a
+    LineColor #8b5cf6
+    LineThickness 2
+    FontColor #f1f5f9
+  }
+
+  ' Boundaries
+  .Boundary, .boundary {
+    BackgroundColor transparent
+    LineColor #475569
+    LineThickness 2
+    LineStyle 5
+    FontColor #f1f5f9
+    Padding 18
+  }
+
+  .System_Boundary, .system_boundary {
+    BackgroundColor #0f172a
+    LineColor #6366f1
+    LineThickness 2
+    LineStyle 5
+    FontColor #818cf8
+    Padding 18
+  }
+
+  .ContainerBoundary, .container_boundary {
+    BackgroundColor #0f172a
+    LineColor #475569
+    LineThickness 2
+    FontColor #94a3b8
+    Padding 16
+  }
+
+  .EnterpriseBoundary, .enterprise {
+    BackgroundColor #0f172a
+    LineColor #6366f1
+    LineThickness 2
+    FontColor #818cf8
+    FontSize 16
+    Padding 22
+  }
+
+  ' Relationships
+  relationship {
+    LineColor #6366f1
+    LineThickness 2
+    FontColor #94a3b8
+    FontSize 12
+  }
+
+  ' Database
+  database {
+    BackgroundColor #0f172a
+    LineColor #6366f1
+    LineThickness 2
+    FontColor #f1f5f9
+  }
+
+  ' Queue
+  queue {
+    BackgroundColor #0f172a
+    LineColor #8b5cf6
+    LineThickness 2
+    FontColor #f1f5f9
+  }
+
+  ' Legend
+  legend {
+    BackgroundColor #1e293b
+    LineColor #475569
+    LineThickness 2
+    FontColor #f1f5f9
+    RoundCorner 12
+    Padding 12
+  }
+
+  ' Rectangle
+  rectangle {
+    BackgroundColor #1e293b
+    LineColor #475569
+    LineThickness 2
+    FontColor #f1f5f9
+    RoundCorner 12
+  }
+
+  ' Node
+  node {
+    BackgroundColor #1e293b
+    LineColor #475569
+    LineThickness 2
+    FontColor #f1f5f9
+    RoundCorner 12
+  }
+
+  ' Package
+  package {
+    BackgroundColor #0f172a
+    LineColor #475569
+    LineThickness 2
+    FontColor #f1f5f9
+    RoundCorner 12
+    Padding 18
+  }
+
+  ' Note
+  note {
+    BackgroundColor #1e293b
+    LineColor #475569
+    LineThickness 2
+    FontColor #94a3b8
+    RoundCorner 12
+    Padding 10
+  }
+</style>

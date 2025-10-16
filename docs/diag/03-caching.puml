@@ -1,0 +1,69 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include p3-c4-styles.puml 
+
+' Schema 3: MongoDB Sharding + Replication + Redis Caching
+' Performance optimization with caching layer
+
+' LAYOUT_WITH_LEGEND()
+
+title MongoDB with Sharding, Replication and Redis Caching - Schema 3
+
+Person(user, "User", "End user")
+
+Person(admin, "Admin", "Admin")
+
+Container(api, "pymongo-api", "FastAPI", "Application service")
+
+' Redis Cache
+SystemDb(redis, "redis", "Redis", "In-memory cache")
+
+' MongoDB Router
+ContainerDb(mongos, "mongos", "MongoDB Router", "Query router")
+
+' Config Servers (Replica Set)
+Container_Boundary(config_rs, "Config Server RS") {
+  ContainerDb(cfg1, "configSrv-1", "Config Primary", "Metadata storage")
+  ContainerDb(cfg2, "configSrv-2", "Config Secondary", "Metadata replica")
+  ContainerDb(cfg3, "configSrv-3", "Config Secondary", "Metadata replica")
+}
+
+' Shard 1 Replica Set
+Container_Boundary(shard1_rs, "Shard 1 RS") {
+  ContainerDb(shard1_1, "shard1-1", "MongoDB Primary", "Data partition 1")
+  ContainerDb(shard1_2, "shard1-2", "MongoDB Secondary", "Replica 1")
+  ContainerDb(shard1_3, "shard1-3", "MongoDB Secondary", "Replica 2")
+}
+
+' Shard 2 Replica Set
+Container_Boundary(shard2_rs, "Shard 2 RS") {
+  ContainerDb(shard2_1, "shard2-1", "MongoDB Primary", "Data partition 2")
+  ContainerDb(shard2_2, "shard2-2", "MongoDB Secondary", "Replica 1")
+  ContainerDb(shard2_3, "shard2-3", "MongoDB Secondary", "Replica 2")
+}
+
+' Relationships
+Rel(admin, api, "HTTP requests", "REST API")
+Rel(user, api, "HTTP requests", "REST API")
+Rel(api, redis, "Cache check", "TCP 6379")
+Rel(api, mongos, "On cache miss", "MongoDB protocol")
+Rel(mongos, config_rs, "Reads metadata (Replica Set)", "TCP 27019")
+Rel(mongos, shard1_rs, "Routes partitioned queries (primary elected)", "TCP 27018")
+Rel(mongos, shard2_rs, "Routes partitioned queries (primary elected)", "TCP 27018")
+
+' Config RS replication
+Rel(cfg1, cfg2, "Replicates", "Internal")
+Rel(cfg1, cfg3, "Replicates", "Internal")
+
+' Shard 1 RS replication
+Rel(shard1_1, shard1_2, "Replicates oplog", "Internal")
+Rel(shard1_1, shard1_3, "Replicates oplog", "Internal")
+
+' Shard 2 RS replication
+Rel(shard2_1, shard2_2, "Replicates oplog", "Internal")
+Rel(shard2_1, shard2_3, "Replicates oplog", "Internal")
+
+' SHOW_LEGEND()
+
+@enduml

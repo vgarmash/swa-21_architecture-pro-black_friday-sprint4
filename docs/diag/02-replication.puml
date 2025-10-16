@@ -1,0 +1,62 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include p3-c4-styles.puml 
+
+' Schema 2: MongoDB Sharding + Replication
+' High availability with 3 replicas per shard
+
+' LAYOUT_WITH_LEGEND()
+
+title MongoDB Sharding with Replication - Schema 2
+
+Person(user, "User", "End user")
+
+Container(api, "pymongo-api", "FastAPI", "Application service")
+
+' MongoDB Router
+ContainerDb(mongos, "mongos", "MongoDB Router", "Query router")
+
+' Config Servers (Replica Set)
+Container_Boundary(config_rs, "Config Server RS") {
+  ContainerDb(cfg1, "configSrv-1", "Config Primary", "Metadata storage")
+  SystemDb(cfg2, "configSrv-2", "Config Secondary", "Metadata replica")
+  SystemDb(cfg3, "configSrv-3", "Config Secondary", "Metadata replica")
+}
+
+' Shard 1 Replica Set
+Container_Boundary(shard1_rs, "Shard 1 RS") {
+  ContainerDb(shard1_1, "shard1-1", "MongoDB Primary", "Data partition 1")
+  SystemDb(shard1_2, "shard1-2", "MongoDB Secondary", "Replica 1")
+  SystemDb(shard1_3, "shard1-3", "MongoDB Secondary", "Replica 2")
+}
+
+' Shard 2 Replica Set
+Container_Boundary(shard2_rs, "Shard 2 RS") {
+  ContainerDb(shard2_1, "shard2-1", "MongoDB Primary", "Data partition 2")
+  SystemDb(shard2_2, "shard2-2", "MongoDB Secondary", "Replica 1")
+  SystemDb(shard2_3, "shard2-3", "MongoDB Secondary", "Replica 2")
+}
+
+' Relationships
+Rel(user, api, "HTTP requests", "REST API")
+Rel(api, mongos, "Queries", "MongoDB protocol")
+Rel(mongos, config_rs, "Reads metadata (Replica Set)", "TCP 27019")
+Rel(mongos, shard1_rs, "Routes partitioned queries (primary elected)", "TCP 27018")
+Rel(mongos, shard2_rs, "Routes partitioned queries (primary elected)", "TCP 27018")
+
+' Config RS replication
+Rel(cfg1, cfg2, "Replicates", "Internal")
+Rel(cfg1, cfg3, "Replicates", "Internal")
+
+' Shard 1 RS replication
+Rel(shard1_1, shard1_2, "Replicates oplog", "Internal")
+Rel(shard1_1, shard1_3, "Replicates oplog", "Internal")
+
+' Shard 2 RS replication
+Rel(shard2_1, shard2_2, "Replicates oplog", "Internal")
+Rel(shard2_1, shard2_3, "Replicates oplog", "Internal")
+
+' SHOW_LEGEND()
+
+@enduml
