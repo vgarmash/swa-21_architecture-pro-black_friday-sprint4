@@ -1,0 +1,207 @@
+name: sharding-repl-cache
+
+x-healthcheck-mongo: &healthcheck_mongo
+  test: ["CMD-SHELL","mongosh --quiet --host 127.0.0.1 --port ${HC_PORT:-27017} --eval \"db.adminCommand({ ping: 1 }).ok\" | grep 1"]
+  interval: 5s
+  timeout: 5s
+  retries: 60
+  start_period: 30s
+
+x-healthcheck-redis: &healthcheck_redis
+  test: ["CMD","redis-cli","ping"]
+  interval: 5s
+  timeout: 5s
+  retries: 60
+  start_period: 5s
+
+services:
+  # --- Config Server RS ---
+  configSrv-1:
+    profiles: ["core"]
+    container_name: configSrv-1
+    hostname: configSrv-1
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --configsvr --replSet configReplSet --port 27019 --bind_ip_all
+    environment: { HC_PORT: "27019" }
+    healthcheck: *healthcheck_mongo
+    restart: unless-stopped
+    volumes: [config1:/data/db]
+    networks: { mongo-sharding-net: { aliases: [configSrv-1] } }
+
+  configSrv-2:
+    profiles: ["core"]
+    container_name: configSrv-2
+    hostname: configSrv-2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --configsvr --replSet configReplSet --port 27019 --bind_ip_all
+    environment: { HC_PORT: "27019" }
+    healthcheck: *healthcheck_mongo
+    restart: unless-stopped
+    volumes: [config2:/data/db]
+    networks: { mongo-sharding-net: { aliases: [configSrv-2] } }
+
+  configSrv-3:
+    profiles: ["core"]
+    container_name: configSrv-3
+    hostname: configSrv-3
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --configsvr --replSet configReplSet --port 27019 --bind_ip_all
+    environment: { HC_PORT: "27019" }
+    healthcheck: *healthcheck_mongo
+    restart: unless-stopped
+    volumes: [config3:/data/db]
+    networks: { mongo-sharding-net: { aliases: [configSrv-3] } }
+
+  # --- Shards ---
+  shard1-1:
+    profiles: ["core"]
+    container_name: shard1-1
+    hostname: shard1-1
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27018 --bind_ip_all
+    environment: { HC_PORT: "27018" }
+    healthcheck: *healthcheck_mongo
+    restart: unless-stopped
+    volumes: [shard1-1:/data/db]
+    networks: { mongo-sharding-net: { aliases: [shard1-1] } }
+
+  shard1-2:
+    profiles: ["core"]
+    container_name: shard1-2
+    hostname: shard1-2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27018 --bind_ip_all
+    environment: { HC_PORT: "27018" }
+    healthcheck: *healthcheck_mongo
+    restart: unless-stopped
+    volumes: [shard1-2:/data/db]
+    networks: { mongo-sharding-net: { aliases: [shard1-2] } }
+
+  shard1-3:
+    profiles: ["core"]
+    container_name: shard1-3
+    hostname: shard1-3
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27018 --bind_ip_all
+    environment: { HC_PORT: "27018" }
+    healthcheck: *healthcheck_mongo
+    restart: unless-stopped
+    volumes: [shard1-3:/data/db]
+    networks: { mongo-sharding-net: { aliases: [shard1-3] } }
+
+  shard2-1:
+    profiles: ["core"]
+    container_name: shard2-1
+    hostname: shard2-1
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27018 --bind_ip_all
+    environment: { HC_PORT: "27018" }
+    healthcheck: *healthcheck_mongo
+    restart: unless-stopped
+    volumes: [shard2-1:/data/db]
+    networks: { mongo-sharding-net: { aliases: [shard2-1] } }
+
+  shard2-2:
+    profiles: ["core"]
+    container_name: shard2-2
+    hostname: shard2-2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27018 --bind_ip_all
+    environment: { HC_PORT: "27018" }
+    healthcheck: *healthcheck_mongo
+    restart: unless-stopped
+    volumes: [shard2-2:/data/db]
+    networks: { mongo-sharding-net: { aliases: [shard2-2] } }
+
+  shard2-3:
+    profiles: ["core"]
+    container_name: shard2-3
+    hostname: shard2-3
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27018 --bind_ip_all
+    environment: { HC_PORT: "27018" }
+    healthcheck: *healthcheck_mongo
+    restart: unless-stopped
+    volumes: [shard2-3:/data/db]
+    networks: { mongo-sharding-net: { aliases: [shard2-3] } }
+
+  # --- Router (mongos) ---
+  mongos:
+    profiles: ["router"]
+    container_name: mongos
+    hostname: mongos
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: >
+      mongos --configdb configReplSet/configSrv-1:27019,configSrv-2:27019,configSrv-3:27019
+             --bind_ip_all --port 27017
+    environment: { HC_PORT: "27017" }
+    healthcheck: *healthcheck_mongo
+    restart: unless-stopped
+    depends_on:
+      configSrv-1: { condition: service_healthy }
+      configSrv-2: { condition: service_healthy }
+      configSrv-3: { condition: service_healthy }
+      shard1-1:   { condition: service_healthy }
+      shard1-2:   { condition: service_healthy }
+      shard1-3:   { condition: service_healthy }
+      shard2-1:   { condition: service_healthy }
+      shard2-2:   { condition: service_healthy }
+      shard2-3:   { condition: service_healthy }
+    ports:
+      - "27017:27017"
+    networks:
+      mongo-sharding-net:
+        aliases: [mongos]
+
+  redis:
+    profiles: ["demo"]
+    container_name: redis
+    hostname: redis
+    image: docker.io/library/redis:7.2-alpine
+    command: ["redis-server","--save","", "--appendonly","no"]
+    healthcheck: *healthcheck_redis
+    restart: unless-stopped
+    depends_on:
+      mongos: { condition: service_healthy }
+    networks:
+      mongo-sharding-net:
+        aliases: [redis]
+
+  pymongo_api:
+    profiles: ["demo"]
+    container_name: pymongo_api
+    build: ./api_app
+    environment:
+      MONGODB_URL: "mongodb://mongos:27017"
+      MONGODB_DATABASE_NAME: ${DB_NAME:-somedb}
+      REDIS_URL: "redis://redis:6379"
+    healthcheck:
+      test: ["CMD-SHELL","python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/docs')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      mongos: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks:
+      mongo-sharding-net:
+        aliases: [pymongo_api]
+
+volumes:
+  config1:
+  config2:
+  config3:
+  shard1-1:
+  shard1-2:
+  shard1-3:
+  shard2-1:
+  shard2-2:
+  shard2-3:
+
+networks:
+  mongo-sharding-net:
+    driver: bridge
