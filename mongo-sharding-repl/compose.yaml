@@ -7,9 +7,6 @@ services:
     restart: always
     ports:
       - "27017:27017"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.10
     volumes:
       - config-data:/data/db
     command:
@@ -32,9 +29,6 @@ services:
     restart: always
     ports:
       - "27011:27018"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.11
     volumes:
       - shard1-replica1-data:/data/db
     command:
@@ -57,9 +51,6 @@ services:
     restart: always
     ports:
       - "27012:27018"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.12
     volumes:
       - shard1-replica2-data:/data/db
     command:
@@ -82,9 +73,6 @@ services:
     restart: always
     ports:
       - "27013:27018"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.13
     volumes:
       - shard1-replica3-data:/data/db
     command:
@@ -107,9 +95,6 @@ services:
     restart: always
     ports:
       - "27021:27019"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.21
     volumes:
       - shard2-replica1-data:/data/db
     command:
@@ -132,9 +117,6 @@ services:
     restart: always
     ports:
       - "27022:27019"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.22
     volumes:
       - shard2-replica2-data:/data/db
     command:
@@ -157,9 +139,6 @@ services:
     restart: always
     ports:
       - "27023:27019"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.23
     volumes:
       - shard2-replica3-data:/data/db
     command:
@@ -190,9 +169,6 @@ services:
       - shard-2-replica-1
       - shard-2-replica-2
       - shard-2-replica-3
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.7
     command:
       [
         "mongos",
@@ -217,16 +193,8 @@ services:
     ports:
       - 8080:8080
     environment:
-      MONGODB_URL: "mongodb://mongos-router"
+      MONGODB_URL: "mongodb://mongos-router:27020"
       MONGODB_DATABASE_NAME: "somedb"
-
-networks:
-  app-network:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 173.17.0.0/16
 
 volumes:
   config-data:
