@@ -56,7 +56,7 @@ jobs:
             if [ -f "$file" ]; then
               filename=$(basename "$file" .mmd)
               echo "Generating PNG for $filename..."
-              mmdc -i "$file" -o "diagrams/output/${filename}.png" -b transparent -t dark \
+              mmdc -i "$file" -o "diagrams/output/${filename}.png" -b white \
                 -p puppeteer-config.json
             fi
           done
@@ -67,7 +67,7 @@ jobs:
             if [ -f "$file" ]; then
               filename=$(basename "$file" .mmd)
               echo "Generating SVG for $filename..."
-              mmdc -i "$file" -o "diagrams/output/${filename}.svg" -b transparent -t dark \
+              mmdc -i "$file" -o "diagrams/output/${filename}.svg" -b white \
                 -p puppeteer-config.json
             fi
           done

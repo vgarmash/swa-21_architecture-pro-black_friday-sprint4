@@ -22,12 +22,12 @@ for file in diagrams/*.mmd; do
         echo -e "${GREEN}Processing $filename...${NC}"
         
         # Generate PNG
-        mmdc -i "$file" -o "diagrams/output/${filename}.png" -b transparent -t dark \
+        mmdc -i "$file" -o "diagrams/output/${filename}.png" -b white \
             -p puppeteer-config.json
         echo "  ✓ Generated ${filename}.png"
         
         # Generate SVG
-        mmdc -i "$file" -o "diagrams/output/${filename}.svg" -b transparent -t dark \
+        mmdc -i "$file" -o "diagrams/output/${filename}.svg" -b white \
             -p puppeteer-config.json
         echo "  ✓ Generated ${filename}.svg"
     fi
