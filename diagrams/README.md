@@ -30,10 +30,10 @@ npm install -g @mermaid-js/mermaid-cli
 
 ```bash
 # PNG
-mmdc -i diagrams/01-sharding.mmd -o diagrams/output/01-sharding.png -b transparent -t dark
+mmdc -i diagrams/01-sharding.mmd -o diagrams/output/01-sharding.png -b transparent -t dark -p puppeteer-config.json
 
 # SVG
-mmdc -i diagrams/01-sharding.mmd -o diagrams/output/01-sharding.svg -b transparent -t dark
+mmdc -i diagrams/01-sharding.mmd -o diagrams/output/01-sharding.svg -b transparent -t dark -p puppeteer-config.json
 ```
 
 Или используйте скрипт для генерации всех диаграмм:

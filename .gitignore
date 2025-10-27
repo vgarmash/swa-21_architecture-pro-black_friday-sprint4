@@ -43,6 +43,9 @@ wheels/
 # Uncomment below if you want to exclude them
 # diagrams/output/
 
+# Keep puppeteer config
+!puppeteer-config.json
+
 # Node modules (if installing mermaid-cli locally)
 node_modules/
 package-lock.json

@@ -30,8 +30,10 @@ mongodb-sharding-optimization/
 ├── .github/
 │   └── workflows/
 │       └── generate-diagrams.yml             # GitHub Action для компиляции
-└── scripts/
-    └── generate-diagrams.sh                  # Скрипт для локальной генерации
+├── scripts/
+│   └── generate-diagrams.sh                  # Скрипт для локальной генерации
+├── puppeteer-config.json                     # Конфигурация Puppeteer для CI/CD
+└── PLANNING.md                               # Этот файл
 ```
 
 ## Схема 1: Базовое шардирование
