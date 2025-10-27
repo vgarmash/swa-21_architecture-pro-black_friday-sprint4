@@ -220,7 +220,7 @@ docker compose up -d
 ./scripts/init-sharding.sh
 
 # 3. Проверка
-curl http://localhost:8080 | jq
+curl http://127.0.0.1:8080 | jq
 ```
 
 ### Что должно получиться
@@ -259,31 +259,31 @@ docker compose ps
 
 #### 2. Проверка topology
 ```bash
-curl -s http://localhost:8080 | jq '.mongo_topology_type'
+curl -s http://127.0.0.1:8080 | jq '.mongo_topology_type'
 # Ожидается: "Sharded"
 ```
 
 #### 3. Проверка mongos
 ```bash
-curl -s http://localhost:8080 | jq '.mongo_is_mongos'
+curl -s http://127.0.0.1:8080 | jq '.mongo_is_mongos'
 # Ожидается: true
 ```
 
 #### 4. Проверка количества документов
 ```bash
-curl -s http://localhost:8080 | jq '.collections.helloDoc.documents_count'
+curl -s http://127.0.0.1:8080 | jq '.collections.helloDoc.documents_count'
 # Ожидается: 1000
 ```
 
 #### 5. Проверка списка шардов
 ```bash
-curl -s http://localhost:8080 | jq '.shards'
+curl -s http://127.0.0.1:8080 | jq '.shards'
 # Ожидается: {"shard1ReplSet": "...", "shard2ReplSet": "..."}
 ```
 
 #### 6. Проверка распределения
 ```bash
-curl -s http://localhost:8080 | jq '.shard_distribution.helloDoc'
+curl -s http://127.0.0.1:8080 | jq '.shard_distribution.helloDoc'
 # Ожидается: данные распределены между двумя шардами
 ```
 
@@ -305,10 +305,10 @@ EOF
 ```
 
 #### 8. Браузер
-Откройте http://localhost:8080 - должен показать полную информацию о кластере
+Откройте http://127.0.0.1:8080 - должен показать полную информацию о кластере
 
 #### 9. Swagger UI
-Откройте http://localhost:8080/docs - интерактивная документация API
+Откройте http://127.0.0.1:8080/docs - интерактивная документация API
 
 ### API Endpoints
 
@@ -333,16 +333,16 @@ POST /{collection_name}/users
 
 ```bash
 # Получить количество
-curl http://localhost:8080/helloDoc/count
+curl http://127.0.0.1:8080/helloDoc/count
 
 # Получить пользователей
-curl http://localhost:8080/helloDoc/users | jq '.users | length'
+curl http://127.0.0.1:8080/helloDoc/users | jq '.users | length'
 
 # Найти пользователя
-curl http://localhost:8080/helloDoc/users/ly42
+curl http://127.0.0.1:8080/helloDoc/users/ly42
 
 # Создать пользователя
-curl -X POST http://localhost:8080/helloDoc/users \
+curl -X POST http://127.0.0.1:8080/helloDoc/users \
   -H "Content-Type: application/json" \
   -d '{"age": 99, "name": "testuser"}'
 ```
@@ -363,13 +363,13 @@ docker compose up -d
 
 ### ✓ Приложение показывает общее количество документов
 ```bash
-curl -s http://localhost:8080 | jq '.collections.helloDoc.documents_count'
+curl -s http://127.0.0.1:8080 | jq '.collections.helloDoc.documents_count'
 ```
 **Результат:** 1000
 
 ### ✓ Приложение показывает количество в каждом шарде
 ```bash
-curl -s http://localhost:8080 | jq '.shard_distribution.helloDoc'
+curl -s http://127.0.0.1:8080 | jq '.shard_distribution.helloDoc'
 ```
 **Результат:**
 ```json

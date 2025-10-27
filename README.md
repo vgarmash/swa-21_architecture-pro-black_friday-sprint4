@@ -99,7 +99,7 @@ docker compose up -d
 ./scripts/init-sharding.sh
 
 # 3. Проверка
-curl http://localhost:8080
+curl http://127.0.0.1:8080
 ```
 
 **Ожидаемый результат:** `"mongo_topology_type": "Sharded"` ✅
@@ -137,7 +137,7 @@ docker compose up -d
 
 ### Если вы запускаете проект на локальной машине
 
-Откройте в браузере http://localhost:8080
+Откройте в браузере http://127.0.0.1:8080
 
 ### Если вы запускаете проект на предоставленной виртуальной машине
 

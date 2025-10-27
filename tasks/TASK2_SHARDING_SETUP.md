@@ -30,7 +30,7 @@ docker compose up -d
 ### 3. Проверка результата
 
 ```bash
-curl http://localhost:8080
+curl http://127.0.0.1:8080
 ```
 
 ## Ручная настройка (пошагово)
@@ -200,7 +200,7 @@ Shard shard2ReplSet at shard2ReplSet/shard2:27018
 ### 3. Проверка через API
 
 ```bash
-curl http://localhost:8080 | jq
+curl http://127.0.0.1:8080 | jq
 ```
 
 **Ожидаемый ответ (пример):**

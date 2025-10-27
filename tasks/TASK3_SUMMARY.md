@@ -142,7 +142,7 @@ docker compose up -d
 ./scripts/init-replication.sh
 
 # 3. Проверка
-curl http://localhost:8080 | jq
+curl http://127.0.0.1:8080 | jq
 ```
 
 ### Что должно получиться
@@ -191,13 +191,13 @@ docker compose ps
 
 #### 2. Проверка topology
 ```bash
-curl -s http://localhost:8080 | jq '.mongo_topology_type'
+curl -s http://127.0.0.1:8080 | jq '.mongo_topology_type'
 # Ожидается: "Sharded"
 ```
 
 #### 3. Проверка шардов с репликами
 ```bash
-curl -s http://localhost:8080 | jq '.shards'
+curl -s http://127.0.0.1:8080 | jq '.shards'
 # Ожидается:
 # {
 #   "shard1ReplSet": "shard1ReplSet/shard1-1:27018,shard1-2:27018,shard1-3:27018",
@@ -239,13 +239,13 @@ shard2-3:27018 - SECONDARY
 
 #### 6. Проверка количества документов
 ```bash
-curl -s http://localhost:8080 | jq '.collections.helloDoc.documents_count'
+curl -s http://127.0.0.1:8080 | jq '.collections.helloDoc.documents_count'
 # Ожидается: 1000
 ```
 
 #### 7. Проверка распределения по шардам
 ```bash
-curl -s http://localhost:8080 | jq '.shard_distribution'
+curl -s http://127.0.0.1:8080 | jq '.shard_distribution'
 ```
 
 #### 8. Тест failover (необязательно)
@@ -286,19 +286,19 @@ docker compose up -d
 
 ### ✓ Приложение показывает общее количество документов
 ```bash
-curl -s http://localhost:8080 | jq '.collections.helloDoc.documents_count'
+curl -s http://127.0.0.1:8080 | jq '.collections.helloDoc.documents_count'
 ```
 **Результат:** 1000
 
 ### ✓ Приложение показывает количество в каждом шарде
 ```bash
-curl -s http://localhost:8080 | jq '.shard_distribution.helloDoc'
+curl -s http://127.0.0.1:8080 | jq '.shard_distribution.helloDoc'
 ```
 **Результат:** Распределение между shard1ReplSet и shard2ReplSet
 
 ### ✓ Приложение показывает количество реплик
 ```bash
-curl -s http://localhost:8080 | jq '.shards'
+curl -s http://127.0.0.1:8080 | jq '.shards'
 ```
 **Результат:**
 ```json

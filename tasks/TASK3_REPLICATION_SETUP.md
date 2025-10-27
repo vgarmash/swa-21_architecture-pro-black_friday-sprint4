@@ -34,7 +34,7 @@ docker compose up -d
 ### 3. Проверка результата
 
 ```bash
-curl http://localhost:8080
+curl http://127.0.0.1:8080
 ```
 
 ## Ручная настройка (пошагово)
@@ -259,7 +259,7 @@ EOF
 ### 4. Проверка через API
 
 ```bash
-curl -s http://localhost:8080 | jq '.shards'
+curl -s http://127.0.0.1:8080 | jq '.shards'
 ```
 
 **Ожидается:**
@@ -319,7 +319,7 @@ docker compose stop shard1-2
 
 Проверяем, что кластер продолжает работать:
 ```bash
-curl http://localhost:8080
+curl http://127.0.0.1:8080
 ```
 
 Проверяем статус replica set:
@@ -361,7 +361,7 @@ EOF
 
 Проверяем, что приложение продолжает работать:
 ```bash
-curl http://localhost:8080
+curl http://127.0.0.1:8080
 ```
 
 Запускаем исходную Primary ноду обратно:
