@@ -139,6 +139,8 @@ time curl -s http://127.0.0.1:8080/helloDoc/users | jq '.users | length'
 
 ✅ API is running and Redis is enabled
 
+🧹 Clearing Redis cache for clean test...
+
 ================================================
 Test 1: First request (WITHOUT cache)
 ================================================
@@ -176,12 +178,30 @@ Request 3 (cached):    0.032s
 
 🚀 Speedup: 27.4x faster with cache!
 
-✅ PASSED: Cached requests are < 100ms
-   Requirement: < 0.1s
-   Actual: 0.045s
+================================================
+         Requirement Check (< 100ms)
+================================================
+
+Requirement: Second and subsequent requests < 100ms
+
+✅ PASSED: All cached requests are < 100ms
+   Request 2: 0.045s (< 0.1s) ✅
+   Request 3: 0.032s (< 0.1s) ✅
 
 ================================================
-✅ Cache performance test completed!
+              Redis Statistics
+================================================
+
+📊 Cached keys: 1
+🔑 Cache keys:
+   api:cache:list_users:helloDoc
+
+📈 Cache stats:
+   keyspace_hits:2
+   keyspace_misses:1
+
+================================================
+✅ Cache performance test completed successfully!
 ================================================
 ```
 

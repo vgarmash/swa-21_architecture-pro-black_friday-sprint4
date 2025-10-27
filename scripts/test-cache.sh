@@ -100,18 +100,38 @@ echo ""
 
 # Check if caching requirements are met
 THRESHOLD=0.1
-MEETS_REQUIREMENT=$(echo "$TIME2 < $THRESHOLD" | bc)
+MEETS_REQUIREMENT_2=$(echo "$TIME2 < $THRESHOLD" | bc)
+MEETS_REQUIREMENT_3=$(echo "$TIME3 < $THRESHOLD" | bc)
 
-if [ "$MEETS_REQUIREMENT" -eq 1 ]; then
-    echo "✅ PASSED: Cached requests are < 100ms"
-    echo "   Requirement: < ${THRESHOLD}s"
-    echo "   Actual: ${TIME2}s"
-else
-    echo "⚠️  WARNING: Cached requests are >= 100ms"
-    echo "   Requirement: < ${THRESHOLD}s"
-    echo "   Actual: ${TIME2}s"
-fi
+echo "================================================"
+echo "         Requirement Check (< 100ms)"
+echo "================================================"
 echo ""
+echo "Requirement: Second and subsequent requests < 100ms"
+echo ""
+
+if [ "$MEETS_REQUIREMENT_2" -eq 1 ] && [ "$MEETS_REQUIREMENT_3" -eq 1 ]; then
+    echo "✅ PASSED: All cached requests are < 100ms"
+    echo "   Request 2: ${TIME2}s (< 0.1s) ✅"
+    echo "   Request 3: ${TIME3}s (< 0.1s) ✅"
+    echo ""
+    EXIT_CODE=0
+else
+    echo "❌ FAILED: Some cached requests are >= 100ms"
+    echo ""
+    if [ "$MEETS_REQUIREMENT_2" -eq 0 ]; then
+        echo "   Request 2: ${TIME2}s (>= 0.1s) ❌"
+    else
+        echo "   Request 2: ${TIME2}s (< 0.1s) ✅"
+    fi
+    if [ "$MEETS_REQUIREMENT_3" -eq 0 ]; then
+        echo "   Request 3: ${TIME3}s (>= 0.1s) ❌"
+    else
+        echo "   Request 3: ${TIME3}s (< 0.1s) ✅"
+    fi
+    echo ""
+    EXIT_CODE=1
+fi
 
 # Redis stats
 echo "================================================"
@@ -134,6 +154,13 @@ docker compose exec -T redis redis-cli INFO stats 2>/dev/null | grep -E "keyspac
 echo ""
 
 echo "================================================"
-echo "✅ Cache performance test completed!"
+if [ "$EXIT_CODE" -eq 0 ]; then
+    echo "✅ Cache performance test completed successfully!"
+else
+    echo "⚠️  Cache performance test completed with warnings!"
+fi
 echo "================================================"
+
+# Exit with appropriate code for CI/CD
+exit $EXIT_CODE
 

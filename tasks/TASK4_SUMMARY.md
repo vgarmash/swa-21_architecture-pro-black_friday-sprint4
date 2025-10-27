@@ -202,7 +202,15 @@ Request 3 (cached):    0.032s   ← Из Redis (в 38x быстрее!)
 
 🚀 Speedup: ~27x faster with cache!
 
-✅ PASSED: Cached requests are < 100ms
+================================================
+         Requirement Check (< 100ms)
+================================================
+
+Requirement: Second and subsequent requests < 100ms
+
+✅ PASSED: All cached requests are < 100ms
+   Request 2: 0.045s (< 0.1s) ✅
+   Request 3: 0.032s (< 0.1s) ✅
 ```
 
 ### Проверка требований ревьюера
