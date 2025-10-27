@@ -1,11 +1,14 @@
 #!/bin/bash
 
 ###
-# Инициализируем бд
+# DEPRECATED: Этот скрипт для старой версии без шардирования
+# Используйте scripts/init-sharding.sh вместо этого
 ###
 
-docker compose exec -T mongodb1 mongosh <<EOF
-use somedb
-for(var i = 0; i < 1000; i++) db.helloDoc.insertOne({age:i, name:"ly"+i})
-EOF
+echo "⚠️  ВНИМАНИЕ: Этот скрипт устарел!"
+echo "Для инициализации шардированного кластера используйте:"
+echo ""
+echo "  ./scripts/init-sharding.sh"
+echo ""
+exit 1
 
