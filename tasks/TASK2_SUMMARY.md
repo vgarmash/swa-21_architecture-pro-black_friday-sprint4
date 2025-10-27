@@ -213,6 +213,9 @@ for collection_name in collection_names:
 ### Быстрый старт (3 команды)
 
 ```bash
+# Перейти в директорию проекта
+cd mongo-sharding
+
 # 1. Запуск контейнеров
 docker compose up -d
 
