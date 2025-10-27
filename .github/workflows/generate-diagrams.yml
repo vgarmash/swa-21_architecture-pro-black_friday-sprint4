@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - solution
+    paths:
+      - 'diagrams/**/*.mmd'
   workflow_dispatch:
 
 jobs:
