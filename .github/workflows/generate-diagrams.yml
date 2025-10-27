@@ -38,10 +38,11 @@ jobs:
             libxfixes3 \
             libxrandr2 \
             libgbm1 \
-            libasound2 \
             libpango-1.0-0 \
             libcairo2 \
-            libatspi2.0-0
+            libatspi2.0-0 \
+            fonts-liberation \
+            libu2f-udev
       
       - name: Install Mermaid CLI
         run: npm install -g @mermaid-js/mermaid-cli
