@@ -1,7 +1,7 @@
-name: mongo-sharding
+name: mongo-sharding-repl
 
 services:
-  # Config Servers
+  # Config Servers (уже в replica set)
   configSrv1:
     container_name: configSrv1
     image: dh-mirror.gitverse.ru/mongo:latest
@@ -23,21 +23,49 @@ services:
     volumes:
       - configSrv3_data:/data/db
 
-  # Shard 1
-  shard1:
-    container_name: shard1
+  # Shard 1 Replica Set (3 ноды)
+  shard1-1:
+    container_name: shard1-1
     image: dh-mirror.gitverse.ru/mongo:latest
     command: mongod --shardsvr --replSet shard1ReplSet --port 27018 --dbpath /data/db
     volumes:
-      - shard1_data:/data/db
+      - shard1_1_data:/data/db
 
-  # Shard 2
-  shard2:
-    container_name: shard2
+  shard1-2:
+    container_name: shard1-2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27018 --dbpath /data/db
+    volumes:
+      - shard1_2_data:/data/db
+
+  shard1-3:
+    container_name: shard1-3
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27018 --dbpath /data/db
+    volumes:
+      - shard1_3_data:/data/db
+
+  # Shard 2 Replica Set (3 ноды)
+  shard2-1:
+    container_name: shard2-1
     image: dh-mirror.gitverse.ru/mongo:latest
     command: mongod --shardsvr --replSet shard2ReplSet --port 27018 --dbpath /data/db
     volumes:
-      - shard2_data:/data/db
+      - shard2_1_data:/data/db
+
+  shard2-2:
+    container_name: shard2-2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27018 --dbpath /data/db
+    volumes:
+      - shard2_2_data:/data/db
+
+  shard2-3:
+    container_name: shard2-3
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27018 --dbpath /data/db
+    volumes:
+      - shard2_3_data:/data/db
 
   # Mongos Router
   mongos:
@@ -48,8 +76,12 @@ services:
       - configSrv1
       - configSrv2
       - configSrv3
-      - shard1
-      - shard2
+      - shard1-1
+      - shard1-2
+      - shard1-3
+      - shard2-1
+      - shard2-2
+      - shard2-3
     ports:
       - "27017:27017"
 
@@ -71,5 +103,9 @@ volumes:
   configSrv1_data:
   configSrv2_data:
   configSrv3_data:
-  shard1_data:
-  shard2_data:
+  shard1_1_data:
+  shard1_2_data:
+  shard1_3_data:
+  shard2_1_data:
+  shard2_2_data:
+  shard2_3_data:
