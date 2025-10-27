@@ -1,7 +1,7 @@
-# Планирование MongoDB Sharding Optimization
+# Задание 1: Планирование MongoDB Sharding Optimization
 
-> 📖 Этот документ содержит полное описание планирования архитектуры (Задание 1)  
-> 🏠 [← Вернуться к README](README.md) | 📊 [Визуализация архитектуры →](diagrams/ARCHITECTURE.md)
+> 📖 Подробное планирование архитектуры  
+> 🏠 [← Вернуться к README](../README.md) | 📋 [Итоговая сводка →](TASK1_SUMMARY.md) | 📊 [Визуализация →](../diagrams/ARCHITECTURE.md)
 
 ## Задание 1: Планирование
 
