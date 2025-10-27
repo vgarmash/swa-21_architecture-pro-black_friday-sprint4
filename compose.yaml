@@ -1,7 +1,7 @@
-name: mongo-sharding-repl
+name: sharding-repl-cache
 
 services:
-  # Config Servers (уже в replica set)
+  # Config Servers (replica set)
   configSrv1:
     container_name: configSrv1
     image: dh-mirror.gitverse.ru/mongo:latest
@@ -85,6 +85,16 @@ services:
     ports:
       - "27017:27017"
 
+  # Redis Cache
+  redis:
+    container_name: redis
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+
   # Application
   pymongo-api:
     container_name: pymongo-api
@@ -93,11 +103,13 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - mongos
+      - redis
     ports:
       - "8080:8080"
     environment:
       MONGODB_URL: "mongodb://mongos:27017"
       MONGODB_DATABASE_NAME: "somedb"
+      REDIS_URL: "redis://redis:6379"
 
 volumes:
   configSrv1_data:
@@ -109,3 +121,4 @@ volumes:
   shard2_1_data:
   shard2_2_data:
   shard2_3_data:
+  redis_data:
