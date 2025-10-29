@@ -195,9 +195,10 @@ Node 4: 0% → 25% (получил 25% = по 8% от каждой)
 
 | Сущность | Характеристика | MongoDB | Cassandra | Решение |
 |----------|---------------|---------|-----------|---------|
-| **products** | • Read-heavy (95% reads)<br/>• Средняя частота обновлений<br/>• 50M документов | ✅ Хорошо работает<br/>Range sharding по category OK | ⚠️ Не критично<br/>Нет выигрыша | **ОСТАВИТЬ в MongoDB** |
-| **orders** | • Write-heavy (новые заказы)<br/>• Append-only (история)<br/>• 100M+ документов<br/>• Критичная скорость записи | ⚠️ Узкое место Primary<br/>Балансировка медленная | ✅ Write-optimized<br/>LSM-tree<br/>Leaderless | **МИГРИРОВАТЬ в Cassandra** |
-| **carts** | • Very write-heavy (40% writes)<br/>• Короткая жизнь (TTL)<br/>• 5M активных документов | ⚠️ Высокая нагрузка на Primary<br/>Oplog bloat | ✅ TTL встроен<br/>Быстрые writes | **МИГРИРОВАТЬ в Cassandra** |
+| **products** | • Read-heavy (95% reads)<br/>• Атомарное обновление остатков<br/>• Нужны транзакции | ✅ ACID транзакции<br/>$inc для остатков<br/>Range sharding OK | ❌ Нет атомарных операций<br/>Eventual consistency | **ОСТАВИТЬ в MongoDB** |
+| **orders (active)** | • Создание + списание остатков<br/>• Нужна транзакционность<br/>• Критична консистентность | ✅ ACID транзакции<br/>Multi-document<br/>Strong consistency | ❌ Нет транзакций<br/>Риск overselling | **ОСТАВИТЬ в MongoDB** |
+| **order_history** | • Read-only (завершенные)<br/>• Append-only<br/>• 100M+ документов<br/>• Аналитика | ⚠️ Балансировка медленная<br/>Primary bottleneck | ✅ Write-optimized<br/>Time-series<br/>Leaderless | **МИГРИРОВАТЬ в Cassandra** |
+| **carts** | • Very write-heavy (40% writes)<br/>• Короткая жизнь (TTL)<br/>• Eventual consistency OK | ⚠️ Высокая нагрузка на Primary<br/>Oplog bloat | ✅ TTL встроен<br/>Быстрые writes | **МИГРИРОВАТЬ в Cassandra** |
 | **sessions** | • Very write-heavy<br/>• TTL (30 минут)<br/>• Высокая частота | ❌ Не подходит<br/>Oplog overhead | ✅ Идеально<br/>In-memory + TTL | **МИГРИРОВАТЬ в Cassandra** |
 | **events/logs** | • Write-only<br/>• Time-series<br/>• Огромный объем | ❌ Не подходит<br/>Балансировка дорогая | ✅ Time-series<br/>Компакция | **МИГРИРОВАТЬ в Cassandra** |
 | **users** | • Read-heavy<br/>• Редкие обновления<br/>• Нужны транзакции | ✅ Хорошо работает<br/>ACID OK | ❌ Нет транзакций | **ОСТАВИТЬ в MongoDB** |
@@ -206,18 +207,21 @@ Node 4: 0% → 25% (получил 25% = по 8% от каждой)
 
 #### ✅ МИГРИРУЕМ В CASSANDRA (критичные write-heavy данные)
 
-**1. Orders (Заказы)**
+**1. Order History (История завершенных заказов)**
 - **Почему**: 
-  - Write-heavy: 10,000 новых заказов/минуту во время пиков
-  - Append-only: история не меняется
-  - Критичная скорость записи для бизнеса
-  - Нужна высокая доступность (99.99%)
+  - Read-only: завершенные заказы не меняются (статус final)
+  - Append-only: исторические данные для аналитики
+  - Огромный объем: 100M+ завершенных заказов
+  - Нужна высокая доступность для просмотра истории
   
 - **Преимущества Cassandra**:
-  - ✅ Leaderless writes → нет узкого места
-  - ✅ LSM-tree → быстрые writes
-  - ✅ Time-series данные (order_date)
+  - ✅ Time-series оптимизация (order_date)
+  - ✅ Компакция для экономии места
+  - ✅ Быстрое чтение истории пользователя
   - ✅ Равномерное распределение по user_id
+  
+- **Что остается в MongoDB**:
+  - ⚠️ **Активные заказы** (pending, processing) - нужны транзакции с products.stock
 
 **2. Active Carts (Активные корзины)**
 - **Почему**:
@@ -254,23 +258,45 @@ Node 4: 0% → 25% (получил 25% = по 8% от каждой)
 
 #### 🔄 ОСТАВЛЯЕМ В MONGODB (транзакционные данные)
 
-**1. Products (Товары)**
+**1. Active Orders (Активные заказы) + Products (Товары с остатками)**
 - **Почему остается**:
-  - Read-heavy (95% reads)
-  - Сложные запросы (фильтры, текстовый поиск)
-  - Range sharding по category работает хорошо
+  - 🔴 **КРИТИЧНО**: Создание заказа + списание остатков = одна транзакция
+  - Нужна атомарность: если нет товара → заказ не создается
+  - Риск overselling при eventual consistency
+  - ACID транзакции между orders и products.stock
+  
+- **Пример транзакции**:
+  ```javascript
+  // MongoDB Transaction
+  session.startTransaction();
+  try {
+    // 1. Проверить и списать остатки
+    const product = await db.products.findOneAndUpdate(
+      { _id: productId, "stock.moscow": { $gte: quantity } },
+      { $inc: { "stock.moscow": -quantity } },
+      { session }
+    );
+    
+    if (!product) throw new Error("Out of stock");
+    
+    // 2. Создать заказ
+    await db.orders.insertOne(orderData, { session });
+    
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  }
+  ```
+  
+- **Что мигрирует в Cassandra**:
+  - После завершения заказа (status: 'delivered') → копируется в order_history
   
 **2. Users (Пользователи)**
 - **Почему остается**:
-  - Нужны ACID транзакции (обновление профиля)
+  - Нужны ACID транзакции (обновление профиля, баланса)
   - Сложные запросы (поиск по email, телефону)
   - Редкие обновления
-
-**3. Inventory (Остатки товаров)**
-- **Почему остается**:
-  - Нужны атомарные операции (`$inc`)
-  - Критична консистентность (не продать больше чем есть)
-  - ACID транзакции
 
 ### Гибридная архитектура
 
@@ -286,17 +312,29 @@ Node 4: 0% → 25% (получил 25% = по 8% от каждой)
         │   Cluster    │           │   Cluster    │
         └──────────────┘           └──────────────┘
                 │                           │
-        ┌───────┴────────┐         ┌────────┴────────┐
-        │                │         │                 │
-    Transactional    Read-Heavy   Write-Heavy    Time-Series
-        Data            Data         Data           Data
-        │                │           │                │
-    ┌───┴───┐      ┌────┴────┐  ┌──┴───┐       ┌────┴─────┐
-    │ users │      │products │  │orders│       │  events  │
-    │ inventory│   │         │  │carts │       │clickstream│
-    └───────┘      └─────────┘  │sessions│      └──────────┘
-                                └────────┘
+        ┌───────┴────────┐         ┌────────┴────────────┐
+        │                │         │                      │
+    Transactional    ACID         Write-Heavy        Time-Series
+        Data         Required        Data               Data
+        │                │           │                    │
+    ┌───┴─────┐    ┌────┴──────┐  ┌──┴──────────┐   ┌─────┴──────┐
+    │ users   │    │ products  │  │order_history│   │   events   │
+    │         │    │  (stock)  │  │   carts     │   │ clickstream│
+    │         │    │           │  │  sessions   │   │            │
+    │         │    │ orders    │  │             │   │            │
+    │         │    │ (active)  │  └─────────────┘   └────────────┘
+    └─────────┘    └───────────┘
+                        │
+                        │ После завершения
+                        ▼
+                   order_history
+                   (Cassandra)
 ```
+
+**Ключевые моменты**:
+- 🔴 **Active Orders + Products** в MongoDB (транзакции для списания остатков)
+- ✅ **Order History** в Cassandra (завершенные заказы, read-only)
+- ✅ **Carts, Sessions, Events** в Cassandra (write-heavy, eventual consistency OK)
 
 ---
 
@@ -317,30 +355,32 @@ Node 4: 0% → 25% (получил 25% = по 8% от каждой)
 **Правило Cassandra**: 
 > "Одна таблица = один паттерн запроса"
 
-### 1. Orders (Заказы)
+### 1. Order History (История завершенных заказов)
+
+**⚠️ ВАЖНО**: Активные заказы (pending, processing) остаются в MongoDB для транзакций с остатками!
 
 #### Паттерны запросов
 
-1. **Q1**: Получить все заказы пользователя (сортировка по дате)
-2. **Q2**: Получить конкретный заказ по ID
+1. **Q1**: Получить историю заказов пользователя (сортировка по дате)
+2. **Q2**: Получить детали завершенного заказа по ID
 3. **Q3**: Получить заказы за период (аналитика)
-4. **Q4**: Получить заказы по статусу (для админки)
+4. **Q4**: Получить заказы по статусу (для отчетов)
 
-#### Таблица 1: `orders_by_user` (Q1)
+#### Таблица 1: `order_history_by_user` (Q1)
 
-**Цель**: История заказов конкретного пользователя
+**Цель**: История завершенных заказов конкретного пользователя
 
 **Partition Key**: `user_id` - распределяет данные по нодам  
 **Clustering Key**: `order_date DESC, order_id` - сортировка внутри партиции
 
 ```sql
-CREATE TABLE orders_by_user (
+CREATE TABLE order_history_by_user (
     user_id UUID,                    -- Partition key
     order_date TIMESTAMP,            -- Clustering key (desc)
     order_id UUID,                   -- Clustering key
     
-    -- Денормализованные данные (из MongoDB)
-    status TEXT,                     -- 'pending', 'paid', 'shipped', 'delivered'
+    -- Денормализованные данные (из MongoDB после завершения заказа)
+    status TEXT,                     -- 'delivered', 'cancelled', 'returned'
     total_amount DECIMAL,
     currency TEXT,
     
@@ -399,30 +439,30 @@ CREATE TYPE address (
 **Запросы**:
 ```sql
 -- История заказов пользователя (последние 10)
-SELECT * FROM orders_by_user
+SELECT * FROM order_history_by_user
 WHERE user_id = 123e4567-e89b-12d3-a456-426614174000
 LIMIT 10;
 
 -- Заказы за последний месяц
-SELECT * FROM orders_by_user
+SELECT * FROM order_history_by_user
 WHERE user_id = 123e4567-e89b-12d3-a456-426614174000
-  AND order_date >= '2024-11-01'
-  AND order_date < '2024-12-01';
+  AND order_date >= '2025-11-01'
+  AND order_date < '2025-12-01';
 ```
 
-#### Таблица 2: `orders_by_id` (Q2)
+#### Таблица 2: `order_history_by_id` (Q2)
 
-**Цель**: Быстрый lookup заказа по ID (для деталей, отслеживания)
+**Цель**: Быстрый lookup завершенного заказа по ID (для деталей, возвратов)
 
 **Partition Key**: `order_id`
 
 ```sql
-CREATE TABLE orders_by_id (
+CREATE TABLE order_history_by_id (
     order_id UUID,                   -- Partition key
     user_id UUID,
     order_date TIMESTAMP,
     
-    -- Те же данные что и в orders_by_user
+    -- Те же данные что и в order_history_by_user
     status TEXT,
     total_amount DECIMAL,
     currency TEXT,
@@ -432,7 +472,7 @@ CREATE TABLE orders_by_id (
     payment_method TEXT,
     payment_id TEXT,
     created_at TIMESTAMP,
-    updated_at TIMESTAMP,
+    completed_at TIMESTAMP,          -- Когда заказ завершен
     
     PRIMARY KEY (order_id)
 );
@@ -445,11 +485,11 @@ CREATE TABLE orders_by_id (
 
 **Запрос**:
 ```sql
-SELECT * FROM orders_by_id
+SELECT * FROM order_history_by_id
 WHERE order_id = 123e4567-e89b-12d3-a456-426614174000;
 ```
 
-#### Таблица 3: `orders_by_date_and_status` (Q3, Q4)
+#### Таблица 3: `order_history_by_date_and_status` (Q3, Q4)
 
 **Цель**: Аналитика, отчеты, админка
 
@@ -457,8 +497,8 @@ WHERE order_id = 123e4567-e89b-12d3-a456-426614174000;
 **Clustering Key**: `order_date DESC, order_id`
 
 ```sql
-CREATE TABLE orders_by_date_and_status (
-    order_date_bucket TEXT,          -- Partition key: '2024-12' (год-месяц)
+CREATE TABLE order_history_by_date_and_status (
+    order_date_bucket TEXT,          -- Partition key: '2025-12' (год-месяц)
     status TEXT,                     -- Partition key
     order_date TIMESTAMP,            -- Clustering key
     order_id UUID,                   -- Clustering key
@@ -476,24 +516,24 @@ CREATE TABLE orders_by_date_and_status (
 **Обоснование Partition Key**:
 - ✅ `order_date_bucket` - группировка по месяцу
   - Избегаем огромных партиций (все заказы в одной)
-  - 1 месяц ≈ 2-3M заказов → приемлемо
+  - 1 месяц ≈ 2-3M завершенных заказов → приемлемо
 - ✅ `status` - дополнительное деление
-  - 'pending', 'paid', 'shipped', 'delivered' - 4 партиции на месяц
-  - Итого: 12 месяцев × 4 статуса = 48 партиций в год
+  - 'delivered', 'cancelled', 'returned' - 3 партиции на месяц
+  - Итого: 12 месяцев × 3 статуса = 36 партиций в год
 
 **Запросы**:
 ```sql
--- Все pending заказы за декабрь 2024
-SELECT * FROM orders_by_date_and_status
-WHERE order_date_bucket = '2024-12'
-  AND status = 'pending';
+-- Все delivered заказы за декабрь 2025
+SELECT * FROM order_history_by_date_and_status
+WHERE order_date_bucket = '2025-12'
+  AND status = 'delivered';
 
--- Заказы за период
-SELECT * FROM orders_by_date_and_status
-WHERE order_date_bucket = '2024-12'
-  AND status = 'paid'
-  AND order_date >= '2024-12-15'
-  AND order_date < '2024-12-20';
+-- Возвраты за период
+SELECT * FROM order_history_by_date_and_status
+WHERE order_date_bucket = '2025-12'
+  AND status = 'returned'
+  AND order_date >= '2025-12-15'
+  AND order_date < '2025-12-20';
 ```
 
 ### 2. Active Carts (Корзины)
@@ -586,7 +626,7 @@ INSERT INTO carts_by_user (
 
 ```sql
 CREATE TABLE abandoned_carts (
-    abandoned_date_bucket TEXT,      -- Partition key: '2024-12-15' (день)
+    abandoned_date_bucket TEXT,      -- Partition key: '2025-12-15' (день)
     abandoned_at TIMESTAMP,          -- Clustering key
     user_session_key TEXT,           -- Clustering key
     
@@ -605,7 +645,7 @@ CREATE TABLE abandoned_carts (
 ```sql
 -- Abandoned carts за сегодня
 SELECT * FROM abandoned_carts
-WHERE abandoned_date_bucket = '2024-12-15';
+WHERE abandoned_date_bucket = '2025-12-15';
 ```
 
 ### 3. User Sessions (Пользовательские сессии)
@@ -672,7 +712,7 @@ WHERE session_id = 'abc123def456';
 ```sql
 CREATE TABLE events_by_user (
     user_id UUID,                    -- Partition key
-    event_date_bucket TEXT,          -- Partition key: '2024-12-15' (день)
+    event_date_bucket TEXT,          -- Partition key: '2025-12-15' (день)
     event_timestamp TIMESTAMP,       -- Clustering key
     event_id TIMEUUID,               -- Clustering key (уникальность)
     
@@ -712,14 +752,14 @@ CREATE TABLE events_by_user (
 -- События пользователя за сегодня
 SELECT * FROM events_by_user
 WHERE user_id = 123e4567-e89b-12d3-a456-426614174000
-  AND event_date_bucket = '2024-12-15';
+  AND event_date_bucket = '2025-12-15';
 
 -- События за последний час
 SELECT * FROM events_by_user
 WHERE user_id = 123e4567-e89b-12d3-a456-426614174000
-  AND event_date_bucket = '2024-12-15'
-  AND event_timestamp >= '2024-12-15 14:00:00'
-  AND event_timestamp < '2024-12-15 15:00:00';
+  AND event_date_bucket = '2025-12-15'
+  AND event_timestamp >= '2025-12-15 14:00:00'
+  AND event_timestamp < '2025-12-15 15:00:00';
 ```
 
 #### Таблица 2: `events_by_type` (Q2)
@@ -730,7 +770,7 @@ WHERE user_id = 123e4567-e89b-12d3-a456-426614174000
 ```sql
 CREATE TABLE events_by_type (
     event_type TEXT,                 -- Partition key
-    event_date_bucket TEXT,          -- Partition key: '2024-12-15'
+    event_date_bucket TEXT,          -- Partition key: '2025-12-15'
     event_timestamp TIMESTAMP,       -- Clustering key
     event_id TIMEUUID,               -- Clustering key
     
@@ -751,16 +791,16 @@ CREATE TABLE events_by_type (
 -- Все 'add_to_cart' события за сегодня
 SELECT * FROM events_by_type
 WHERE event_type = 'add_to_cart'
-  AND event_date_bucket = '2024-12-15';
+  AND event_date_bucket = '2025-12-15';
 ```
 
 ### Сводная таблица моделей
 
 | Таблица | Partition Key | Clustering Key | Цель | Размер партиции |
 |---------|---------------|----------------|------|-----------------|
-| `orders_by_user` | `user_id` | `order_date DESC, order_id` | История заказов | ~100-500 заказов/user |
-| `orders_by_id` | `order_id` | - | Lookup по ID | 1 заказ |
-| `orders_by_date_and_status` | `(date_bucket, status)` | `order_date DESC, order_id` | Аналитика | ~500k-1M заказов/месяц |
+| `order_history_by_user` | `user_id` | `order_date DESC, order_id` | История завершенных заказов | ~100-500 заказов/user |
+| `order_history_by_id` | `order_id` | - | Lookup по ID | 1 заказ |
+| `order_history_by_date_and_status` | `(date_bucket, status)` | `order_date DESC, order_id` | Аналитика | ~500k-1M заказов/месяц |
 | `carts_by_user` | `user_session_key` | `status, updated_at DESC` | Активные корзины | 1-3 корзины/user |
 | `abandoned_carts` | `abandoned_date_bucket` | `abandoned_at DESC, user_key` | Маркетинг | ~10k-50k /день |
 | `user_sessions` | `session_id` | - | Lookup сессии | 1 сессия |
@@ -774,9 +814,9 @@ WHERE event_type = 'add_to_cart'
 **Решение 1**: Bucketing по году/месяцу
 
 ```sql
-CREATE TABLE orders_by_user_bucketed (
+CREATE TABLE order_history_by_user_bucketed (
     user_id UUID,
-    order_year_month TEXT,           -- '2024-12' - bucketing
+    order_year_month TEXT,           -- '2025-12' - bucketing
     order_date TIMESTAMP,
     order_id UUID,
     -- ...
@@ -784,14 +824,14 @@ CREATE TABLE orders_by_user_bucketed (
 );
 
 -- Запрос за последний месяц (только 1 партиция)
-SELECT * FROM orders_by_user_bucketed
+SELECT * FROM order_history_by_user_bucketed
 WHERE user_id = 123e4567-e89b-12d3-a456-426614174000
-  AND order_year_month = '2024-12';
+  AND order_year_month = '2025-12';
 
 -- Запрос за год (12 партиций - параллельно)
-SELECT * FROM orders_by_user_bucketed
+SELECT * FROM order_history_by_user_bucketed
 WHERE user_id = 123e4567-e89b-12d3-a456-426614174000
-  AND order_year_month IN ('2024-01', '2024-02', ..., '2024-12');
+  AND order_year_month IN ('2025-01', '2025-02', ..., '2025-12');
 ```
 
 **Решение 2**: Shard suffix (случайное распределение)
@@ -809,13 +849,13 @@ CREATE TABLE events_sharded (
 
 -- Вставка: случайный shard
 INSERT INTO events_sharded (user_id, shard_id, event_date_bucket, ...)
-VALUES (uuid(), random() % 10, '2024-12-15', ...);
+VALUES (uuid(), random() % 10, '2025-12-15', ...);
 
 -- Чтение: запрос на все шарды (10 партиций параллельно)
 SELECT * FROM events_sharded
 WHERE user_id = 123e4567-e89b-12d3-a456-426614174000
   AND shard_id IN (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-  AND event_date_bucket = '2024-12-15';
+  AND event_date_bucket = '2025-12-15';
 ```
 
 ---
@@ -984,22 +1024,22 @@ nodetool repair -pr keyspace_name
 
 ### Выбор стратегий для каждой сущности
 
-#### Orders (Заказы)
+#### Order History (История заказов)
 
 **Требования**:
-- 🔴 Критична консистентность (финансовые данные)
-- 🟡 Latency важна, но не критична
-- ✅ Append-only (нет конфликтов)
+- 🟡 Консистентность важна, но eventual OK (данные read-only)
+- 🟡 Latency важна для просмотра истории
+- ✅ Append-only (нет конфликтов, нет обновлений)
 
 **Решение**:
 
 ```sql
 -- Настройки таблиц
-CREATE TABLE orders_by_user (
+CREATE TABLE order_history_by_user (
     -- ...
     PRIMARY KEY ((user_id), order_date, order_id)
-) WITH read_repair_chance = 0.2  -- 20% read repair
-  AND dclocal_read_repair_chance = 0.2;
+) WITH read_repair_chance = 0.1  -- 10% read repair (данные не меняются)
+  AND dclocal_read_repair_chance = 0.1;
 
 -- Replication strategy
 CREATE KEYSPACE mobile_world
@@ -1012,35 +1052,35 @@ WITH replication = {
 
 **Consistency Levels**:
 ```python
-# Write
+# Write (копирование из MongoDB после завершения заказа)
 session.execute(
     insert_query,
-    consistency_level=ConsistencyLevel.QUORUM  # 2 из 3 нод
+    consistency_level=ConsistencyLevel.ONE  # Быстро, eventual OK
 )
 
 # Read (для деталей заказа)
 session.execute(
     select_query,
-    consistency_level=ConsistencyLevel.QUORUM  # Strong consistency
+    consistency_level=ConsistencyLevel.ONE  # Eventual OK (данные read-only)
 )
 
-# Read (для истории заказов - не критично)
+# Read (для истории заказов)
 session.execute(
     select_query,
-    consistency_level=ConsistencyLevel.ONE  # Быстро, eventual consistency OK
+    consistency_level=ConsistencyLevel.ONE  # Быстро
 )
 ```
 
 **Стратегии**:
 - ✅ **Hinted Handoff**: Enabled (временные отказы)
-- ✅ **Read Repair**: 20% (синхронизация при чтении)
-- ✅ **Anti-Entropy Repair**: Раз в неделю (полная синхронизация)
+- ⚠️ **Read Repair**: 10% (низкий overhead, данные не меняются)
+- ✅ **Anti-Entropy Repair**: Раз в 2 недели (архивные данные)
 
 **Обоснование**:
-- Финансовые данные → QUORUM writes
-- История не критична → ONE reads (быстро)
-- Read repair 20% → баланс latency vs consistency
-- Регулярный repair → предотвращение divergence
+- Данные read-only после вставки → eventual consistency OK
+- История не критична → ONE writes/reads (быстро)
+- Read repair 10% → минимальный overhead
+- Регулярный repair раз в 2 недели → достаточно для архива
 
 #### Active Carts (Корзины)
 
@@ -1188,7 +1228,7 @@ session.execute(
 
 | Сущность | RF | Write CL | Read CL | Hinted Handoff | Read Repair | Anti-Entropy Repair | Обоснование |
 |----------|----|---------| --------|----------------|-------------|---------------------|-------------|
-| **Orders** | 3 | QUORUM | QUORUM (details)<br/>ONE (history) | ✅ Enabled | ✅ 20% | ✅ Weekly | Финансовые данные, критична консистентность |
+| **Order History** | 3 | ONE | ONE | ✅ Enabled | ⚠️ 10% | ✅ Bi-weekly | Архивные данные, read-only, eventual OK |
 | **Carts** | 3 | ONE | ONE (view)<br/>QUORUM (checkout) | ✅ Enabled | ⚠️ 0% (global)<br/>10% (local DC) | ✅ Bi-weekly | UX критичен, eventual OK |
 | **Sessions** | 3 | ONE | ONE | ✅ Enabled | ❌ Disabled | ❌ Not needed | Очень короткая жизнь, latency критична |
 | **Events** | 3 | ONE | ONE | ✅ Enabled | ❌ Disabled | ⚠️ Monthly | Аналитика, eventual OK, write-heavy |
@@ -1288,9 +1328,37 @@ class DataService:
         return mongo_db.products.find({"category": category})
     
     def create_order(self, order_data):
-        # Cassandra: orders (write-heavy)
-        query = "INSERT INTO orders_by_user (...) VALUES (...)"
-        cassandra_session.execute(query, ...)
+        # MongoDB: создание активного заказа с транзакцией
+        with mongo_client.start_session() as session:
+            with session.start_transaction():
+                # 1. Списать остатки
+                product = mongo_db.products.find_one_and_update(
+                    {"_id": order_data["product_id"], "stock": {"$gte": order_data["quantity"]}},
+                    {"$inc": {"stock": -order_data["quantity"]}},
+                    session=session
+                )
+                if not product:
+                    raise Exception("Out of stock")
+                
+                # 2. Создать заказ
+                result = mongo_db.orders.insert_one(order_data, session=session)
+                return result
+    
+    def complete_order(self, order_id):
+        # 1. Обновить статус в MongoDB
+        order = mongo_db.orders.find_one_and_update(
+            {"_id": order_id},
+            {"$set": {"status": "delivered", "completed_at": datetime.now()}}
+        )
+        
+        # 2. Скопировать в Cassandra (order_history)
+        query = "INSERT INTO order_history_by_user (...) VALUES (...)"
+        cassandra_session.execute(query, order)
+    
+    def get_order_history(self, user_id):
+        # Cassandra: история завершенных заказов
+        query = "SELECT * FROM order_history_by_user WHERE user_id = ? LIMIT 10"
+        return cassandra_session.execute(query, [user_id])
     
     def get_user_cart(self, user_id):
         # Cassandra: carts (write-heavy)
@@ -1405,9 +1473,12 @@ WITH replication = {
 USE mobile_world;
 
 # Создание таблиц (см. раздел 10.2)
-CREATE TABLE orders_by_user (...);
-CREATE TABLE orders_by_id (...);
+CREATE TABLE order_history_by_user (...);
+CREATE TABLE order_history_by_id (...);
+CREATE TABLE order_history_by_date_and_status (...);
 CREATE TABLE carts_by_user (...);
+CREATE TABLE user_sessions (...);
+CREATE TABLE events_by_user (...);
 # ...
 ```
 
@@ -1425,7 +1496,7 @@ session = cluster.connect('mobile_world')
 start = time.time()
 for i in range(10000):
     session.execute(
-        "INSERT INTO orders_by_user (...) VALUES (...)",
+        "INSERT INTO order_history_by_user (...) VALUES (...)",
         [...]
     )
 end = time.time()
@@ -1435,46 +1506,70 @@ print(f"Throughput: {10000 / (end - start):.0f} writes/sec")
 
 ### Этап 2: Dual-Write (2-4 недели)
 
-**Пишем в MongoDB И Cassandra одновременно**
+**При завершении заказа копируем в Cassandra**
 
 ```python
-def create_order(order_data):
-    # 1. Записать в MongoDB (старая система)
-    mongo_result = mongo_db.orders.insert_one(order_data)
+def complete_order(order_id):
+    # 1. Обновить статус в MongoDB (активный → завершенный)
+    order = mongo_db.orders.find_one_and_update(
+        {"_id": order_id},
+        {"$set": {"status": "delivered", "completed_at": datetime.now()}},
+        return_document=ReturnDocument.AFTER
+    )
     
-    # 2. Записать в Cassandra (новая система)
+    # 2. Скопировать завершенный заказ в Cassandra (order_history)
     try:
+        # Вставка в order_history_by_user
         cassandra_session.execute(
-            "INSERT INTO orders_by_user (...) VALUES (...)",
+            """
+            INSERT INTO order_history_by_user 
+            (user_id, order_date, order_id, status, total_amount, currency, items, ...)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ...)
+            """,
+            [order["user_id"], order["order_date"], order["_id"], ...]
+        )
+        
+        # Вставка в order_history_by_id
+        cassandra_session.execute(
+            "INSERT INTO order_history_by_id (...) VALUES (...)",
             [...]
         )
     except Exception as e:
-        # Логировать ошибку, но не падать
-        logger.error(f"Cassandra write failed: {e}")
+        # Логировать ошибку для повторной синхронизации
+        logger.error(f"Cassandra write failed for order {order_id}: {e}")
     
-    return mongo_result
+    return order
 ```
+
+**⚠️ ВАЖНО**: Активные заказы (pending, processing) остаются ТОЛЬКО в MongoDB!
 
 **Мониторинг рассинхронизации**:
 
 ```python
 # Скрипт сравнения
 def compare_data():
-    # MongoDB
-    mongo_orders = mongo_db.orders.count_documents({})
+    # MongoDB: завершенные заказы (должны быть в Cassandra)
+    mongo_completed_orders = mongo_db.orders.count_documents({
+        "status": {"$in": ["delivered", "cancelled", "returned"]}
+    })
     
-    # Cassandra
+    # Cassandra: история заказов
     cassandra_orders = cassandra_session.execute(
-        "SELECT COUNT(*) FROM orders_by_user"
+        "SELECT COUNT(*) FROM order_history_by_user"
     ).one()[0]
     
-    diff = abs(mongo_orders - cassandra_orders)
-    print(f"Difference: {diff} orders ({diff / mongo_orders * 100:.2f}%)")
+    diff = abs(mongo_completed_orders - cassandra_orders)
+    print(f"MongoDB completed orders: {mongo_completed_orders}")
+    print(f"Cassandra order history: {cassandra_orders}")
+    print(f"Difference: {diff} orders ({diff / mongo_completed_orders * 100:.2f}%)")
+    
+    if diff / mongo_completed_orders > 0.01:  # > 1% расхождение
+        print("⚠️ WARNING: Too many missing orders in Cassandra!")
 ```
 
 ### Этап 3: Backfill (параллельно с Этапом 2)
 
-**Миграция исторических данных**
+**Миграция исторических завершенных заказов**
 
 ```python
 # Migration script
@@ -1488,86 +1583,127 @@ mongo_db = mongo_client.mobile_world
 cassandra_cluster = Cluster(['cassandra1'])
 cassandra_session = cassandra_cluster.connect('mobile_world')
 
-# Подготовленный statement (быстрее)
-insert_stmt = cassandra_session.prepare(
-    "INSERT INTO orders_by_user (user_id, order_date, order_id, ...) VALUES (?, ?, ?, ...)"
+# Подготовленные statements (быстрее)
+insert_by_user_stmt = cassandra_session.prepare(
+    """
+    INSERT INTO order_history_by_user 
+    (user_id, order_date, order_id, status, total_amount, currency, items, ...)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ...)
+    """
 )
 
-# Миграция батчами
+insert_by_id_stmt = cassandra_session.prepare(
+    "INSERT INTO order_history_by_id (order_id, user_id, ...) VALUES (?, ?, ...)"
+)
+
+# Миграция ТОЛЬКО завершенных заказов
 batch_size = 1000
-cursor = mongo_db.orders.find().batch_size(batch_size)
+cursor = mongo_db.orders.find({
+    "status": {"$in": ["delivered", "cancelled", "returned"]}
+}).batch_size(batch_size)
 
 migrated = 0
 for order in cursor:
-    # Преобразование данных
-    cassandra_order = {
-        'user_id': order['user_id'],
-        'order_date': order['created_at'],
-        'order_id': order['_id'],
+    # Вставка в order_history_by_user
+    cassandra_session.execute(insert_by_user_stmt, [
+        order['user_id'],
+        order['order_date'],
+        order['_id'],
+        order['status'],
+        order['total_amount'],
+        order['currency'],
+        order['items'],
         # ...
-    }
+    ])
     
-    # Вставка в Cassandra
-    cassandra_session.execute(insert_stmt, cassandra_order)
+    # Вставка в order_history_by_id
+    cassandra_session.execute(insert_by_id_stmt, [
+        order['_id'],
+        order['user_id'],
+        # ...
+    ])
     
     migrated += 1
     if migrated % 10000 == 0:
-        print(f"Migrated {migrated} orders")
+        print(f"Migrated {migrated} completed orders")
 
-print(f"Total migrated: {migrated}")
+print(f"Total migrated: {migrated} completed orders")
+print(f"Active orders remain in MongoDB")
 ```
 
 ### Этап 4: Переключение на чтение (1 неделя)
 
-**Постепенно переключаем reads на Cassandra**
+**Постепенно переключаем чтение истории на Cassandra**
 
 ```python
 # Feature flag
-USE_CASSANDRA_READS = os.getenv('USE_CASSANDRA_READS', 'false') == 'true'
+USE_CASSANDRA_HISTORY = os.getenv('USE_CASSANDRA_HISTORY', 'false') == 'true'
 
-def get_user_orders(user_id):
-    if USE_CASSANDRA_READS:
-        # Новая система (Cassandra)
+def get_user_order_history(user_id):
+    """Получить историю ЗАВЕРШЕННЫХ заказов"""
+    if USE_CASSANDRA_HISTORY:
+        # Новая система (Cassandra) - быстрее для истории
         result = cassandra_session.execute(
-            "SELECT * FROM orders_by_user WHERE user_id = ? LIMIT 10",
+            "SELECT * FROM order_history_by_user WHERE user_id = ? LIMIT 10",
             [user_id]
         )
         return list(result)
     else:
         # Старая система (MongoDB)
-        return list(mongo_db.orders.find({"user_id": user_id}).limit(10))
+        return list(mongo_db.orders.find({
+            "user_id": user_id,
+            "status": {"$in": ["delivered", "cancelled", "returned"]}
+        }).limit(10))
+
+def get_active_orders(user_id):
+    """Получить АКТИВНЫЕ заказы - всегда из MongoDB"""
+    return list(mongo_db.orders.find({
+        "user_id": user_id,
+        "status": {"$in": ["pending", "processing", "shipped"]}
+    }))
 ```
 
 **Canary deployment**:
 ```
-Week 1: 10% пользователей → Cassandra reads
-Week 2: 25% пользователей → Cassandra reads
-Week 3: 50% пользователей → Cassandra reads
-Week 4: 100% пользователей → Cassandra reads
+Week 1: 10% пользователей → Cassandra history reads
+Week 2: 25% пользователей → Cassandra history reads
+Week 3: 50% пользователей → Cassandra history reads
+Week 4: 100% пользователей → Cassandra history reads
+
+⚠️ Активные заказы ВСЕГДА читаются из MongoDB
 ```
 
-### Этап 5: Отключение MongoDB (после 2-4 недель стабильности)
+### Этап 5: Очистка старых данных (после 2-4 недель стабильности)
 
-**Удаление dual-write**
+**⚠️ ВАЖНО**: MongoDB НЕ отключается для заказов! Активные заказы остаются в MongoDB.
 
-```python
-def create_order(order_data):
-    # Только Cassandra
-    cassandra_session.execute(
-        "INSERT INTO orders_by_user (...) VALUES (...)",
-        [...]
-    )
-```
-
-**Архивация MongoDB данных**
+**Очистка старой истории из MongoDB (опционально)**
 
 ```bash
-# Backup
-mongodump --uri="mongodb://mongos:27017/mobile_world" --collection=orders --out=/backup
+# Backup старых завершенных заказов
+mongodump --uri="mongodb://mongos:27017/mobile_world" \
+  --collection=orders \
+  --query='{"status": {"$in": ["delivered", "cancelled", "returned"]}, "completed_at": {"$lt": "2025-01-01"}}' \
+  --out=/backup
 
-# Опционально: удаление старых данных
-mongo mobile_world --eval "db.orders.deleteMany({created_at: {$lt: new Date('2024-01-01')}})"
+# Удаление старых завершенных заказов из MongoDB (уже в Cassandra)
+mongo mobile_world --eval '
+db.orders.deleteMany({
+  status: {$in: ["delivered", "cancelled", "returned"]},
+  completed_at: {$lt: new Date("2025-01-01")}
+})
+'
 ```
+
+**Что остается в MongoDB после очистки**:
+- ✅ Все активные заказы (pending, processing, shipped)
+- ✅ Недавно завершенные заказы (последние 3-6 месяцев)
+- ✅ Products с остатками
+- ✅ Users
+
+**Что в Cassandra**:
+- ✅ Вся история завершенных заказов (100M+ документов)
+- ✅ Архивные данные для аналитики
 
 ---
 
@@ -1668,15 +1804,15 @@ groups:
 ### Преимущества гибридного подхода
 
 ✅ **MongoDB** для:
-- Транзакционные данные (users, inventory)
-- Сложные запросы (products с фильтрами)
-- ACID требования
+- **Транзакционные данные** (users, active orders, products с остатками)
+- **Сложные запросы** (products с фильтрами, текстовый поиск)
+- **ACID требования** (создание заказа + списание остатков)
 
 ✅ **Cassandra** для:
-- Write-heavy данные (orders, events)
-- Time-series (clickstream)
-- Высокая доступность (99.99%)
-- Горизонтальное масштабирование
+- **Write-heavy данные** (order_history, carts, sessions, events)
+- **Time-series** (clickstream, архивы)
+- **Высокая доступность** (99.99%)
+- **Горизонтальное масштабирование** без перебалансировки
 
 ### Результаты миграции
 
@@ -1701,11 +1837,18 @@ groups:
 
 **✅ Задание 10 выполнено!**
 
-**Разработана комплексная стратегия миграции критически важных write-heavy данных на Apache Cassandra для обеспечения:**
-- ⚡ **10x throughput** для writes
-- 🚀 **24x faster** добавление нод
-- 🎯 **99.99% availability**
-- 📉 **-90% write latency**
+**Разработана комплексная гибридная архитектура с разделением данных:**
 
-**🎉 Система готова к нагрузке 50,000+ запросов/сек!**
+**🔴 MongoDB** (транзакции ACID):
+- ✅ **Active Orders** + **Products** (атомарные операции создания заказа + списания остатков)
+- ✅ **Users** (ACID для профилей и балансов)
+- ⚠️ Риск overselling предотвращен через транзакции
+
+**✅ Cassandra** (write-heavy, архивы):
+- ⚡ **Order History** (завершенные заказы) - 10x throughput для writes
+- 🚀 **Carts, Sessions, Events** - быстрые writes, eventual consistency OK
+- 🎯 **99.99% availability** через leaderless репликацию
+- 📉 **-90% write latency** для истории заказов
+
+**🎉 Система готова к нагрузке 50,000+ запросов/сек без риска overselling!**
 

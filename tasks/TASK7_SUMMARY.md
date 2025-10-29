@@ -66,8 +66,8 @@
     size: "128GB",
     brand: "Samsung"
   },
-  created_at: ISODate("2024-01-15T10:00:00Z"),
-  updated_at: ISODate("2024-10-27T15:30:00Z")
+  created_at: ISODate("2025-01-15T10:00:00Z"),
+  updated_at: ISODate("2025-10-27T15:30:00Z")
 }
 ```
 
@@ -169,9 +169,9 @@ db.products.createIndex({ name: "text", "attributes.brand": "text" })
 ```javascript
 {
   _id: ObjectId("..."),              // Уникальный идентификатор заказа
-  order_id: "ORD-2024-10-001234",    // Человекочитаемый ID
+  order_id: "ORD-2025-10-001234",    // Человекочитаемый ID
   user_id: "USER-67890",             // Идентификатор клиента
-  created_at: ISODate("2024-10-27T14:30:00Z"),  // Дата заказа
+  created_at: ISODate("2025-10-27T14:30:00Z"),  // Дата заказа
   items: [                           // Товары в заказе
     {
       product_id: "PROD-12345",
@@ -194,7 +194,7 @@ db.products.createIndex({ name: "text", "attributes.brand": "text" })
     street: "Ленинский проспект, 15",
     zip: "119991"
   },
-  updated_at: ISODate("2024-10-27T15:00:00Z")
+  updated_at: ISODate("2025-10-27T15:00:00Z")
 }
 ```
 
@@ -306,18 +306,18 @@ db.orders.createIndex({ geo_zone: 1, created_at: 1 })
     {
       product_id: "PROD-12345",
       quantity: 1,
-      added_at: ISODate("2024-10-27T14:00:00Z")
+      added_at: ISODate("2025-10-27T14:00:00Z")
     },
     {
       product_id: "PROD-67890",
       quantity: 2,
-      added_at: ISODate("2024-10-27T14:15:00Z")
+      added_at: ISODate("2025-10-27T14:15:00Z")
     }
   ],
   status: "active",                  // active | ordered | abandoned
-  created_at: ISODate("2024-10-27T14:00:00Z"),
-  updated_at: ISODate("2024-10-27T14:30:00Z"),
-  expires_at: ISODate("2024-11-03T14:00:00Z")  // TTL: 7 дней
+  created_at: ISODate("2025-10-27T14:00:00Z"),
+  updated_at: ISODate("2025-10-27T14:30:00Z"),
+  expires_at: ISODate("2025-11-03T14:00:00Z")  // TTL: 7 дней
 }
 ```
 
@@ -579,7 +579,7 @@ db.orders.createIndex({ geo_zone: 1, created_at: 1 })
 
 // Пример создания заказа
 db.orders.insertOne({
-  order_id: "ORD-2024-10-001234",
+  order_id: "ORD-2025-10-001234",
   user_id: "USER-67890",
   created_at: new Date(),
   items: [
@@ -610,14 +610,14 @@ db.orders.find({
 db.orders.find({
   user_id: "USER-67890",
   created_at: { 
-    $gte: ISODate("2024-10-01T00:00:00Z"),
-    $lte: ISODate("2024-10-31T23:59:59Z")
+    $gte: ISODate("2025-10-01T00:00:00Z"),
+    $lte: ISODate("2025-10-31T23:59:59Z")
   }
 })
 
 // Обновление статуса
 db.orders.updateOne(
-  { order_id: "ORD-2024-10-001234" },
+  { order_id: "ORD-2025-10-001234" },
   { $set: { status: "processing", updated_at: new Date() } }
 )
 ```
@@ -812,7 +812,7 @@ db.products.find(
 db.orders.aggregate([
   {
     $match: {
-      created_at: { $gte: ISODate("2024-10-01") }
+      created_at: { $gte: ISODate("2025-10-01") }
     }
   },
   {

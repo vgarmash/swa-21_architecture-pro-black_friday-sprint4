@@ -547,7 +547,7 @@ db.printSlaveReplicationInfo()
 
 // Вывод:
 // source: shard1-2:27018
-//   syncedTo: Thu Jan 01 2024 12:34:56 GMT+0000 (UTC)
+//   syncedTo: Thu Jan 01 2025 12:34:56 GMT+0000 (UTC)
 //   0 secs (0 hrs) behind the primary
 
 // 2. На Secondary шарде
