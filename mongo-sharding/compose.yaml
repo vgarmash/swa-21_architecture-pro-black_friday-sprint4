@@ -9,7 +9,7 @@ services:
     ports:
       - 8080:8080
     environment:
-      MONGODB_URL: "mongodb://mongos_router"
+      MONGODB_URL: "mongodb://mongos_router:27020"
       MONGODB_DATABASE_NAME: "somedb"
     networks:
       - app-network
@@ -21,13 +21,12 @@ services:
     ports:
       - "27017:27017"
     networks:
-      app-network:
-        ipv4_address: 173.17.0.10
+      - app-network
     volumes:
       - config-data:/data/db
     command:
       [
-        "--configsvr",  //запуск в режиме конфигурации
+        "--configsvr", 
         "--replSet",
         "config_server",
         "--bind_ip_all",
@@ -46,8 +45,7 @@ services:
     ports:
       - "27018:27018"
     networks:
-      app-network:
-        ipv4_address: 173.17.0.9
+      - app-network
     volumes:
       - shard1-data:/data/db
     command:
@@ -71,8 +69,7 @@ services:
     ports:
       - "27019:27019"
     networks:
-      app-network:
-        ipv4_address: 173.17.0.8
+      - app-network
     volumes:
       - shard2-data:/data/db
     command:
@@ -97,11 +94,10 @@ services:
     ports:
       - "27020:27020"
     networks:
-      app-network:
-        ipv4_address: 173.17.0.7
+      - app-network
     command:
       [
-        "mongos", //обычная mongo в режиме роутера
+        "mongos", 
         "--configdb", 
         "config_server/configSrv:27017",
         "--bind_ip_all",
@@ -117,11 +113,6 @@ networks:
   app-network:
     name: app-network
     driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 173.17.0.0/16
-
 
 volumes:
   config-data:
