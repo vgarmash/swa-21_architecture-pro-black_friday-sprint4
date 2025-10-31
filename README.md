@@ -32,3 +32,10 @@
 
 ![task5.drawio screen](/docs/task6-cdn.png)
 
+# Задание 7. Проектирование схем коллекций для шардирования данных
+
+[task7/README](/task7/README.md)
+
+# Задание 8. Выявление и устранение «горячих» шардовЗадание
+
+[task8/README](/task8/README.md)
