@@ -1,0 +1,43 @@
+@startuml ER.MongoDB.AsIs
+
+title "Мобильный мир — схема данных MongoDB"
+hide circle
+
+entity "orders" as orders {
+  * _id: ObjectId
+  --
+  user_id: ObjectId
+  created_at: datetime
+  items: [ { product_id : ObjectId, price : decimal } ]
+  status: string
+  total: decimal
+  geo_zone: string
+}
+
+entity "products" as products {
+  * _id: ObjectId
+  --
+  name: string
+  category: string
+  price: decimal
+  stock: [ { geo_zone: string, quantity: int } ]
+  attributes: [ { atribute: string, state: int } ]
+}
+
+entity "carts" as carts {
+  * _id : ObjectId
+  --
+  user_id : ObjectId
+  session_id : string
+  items : [ { product_id : ObjectId, quantity : int } ]
+  status : enum("active", "ordered", "abandoned")
+  created_at : datetime
+  updated_at : datetime
+  expires_at : datetime (TTL)
+}
+
+orders::user_id --> carts::user_id : one-to-many
+orders::items --> products::_id : many-to-one
+carts::items --> products::_id : many-to-one
+
+@enduml
