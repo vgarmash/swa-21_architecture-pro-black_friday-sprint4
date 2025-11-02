@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram name="Schema3-Caching" id="schema3-caching">
-        <mxGraphModel dx="922" dy="624" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+        <mxGraphModel dx="981" dy="555" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -97,9 +97,6 @@
                 </mxCell>
                 <mxCell id="legend_desc" value="• Redis кеш для ускорения запросов (80-90% снижение latency)&#xa;• 2 шарда с репликацией (по 3 реплики)&#xa;• Replica Set 1 (rs1): shard1-1, shard1-2, shard1-3&#xa;• Replica Set 2 (rs2): shard2-1, shard2-2, shard2-3&#xa;• Cache-Aside Pattern: проверка кеша → при miss запрос к MongoDB&#xa;• Пунктирные линии = репликация данных" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;" parent="1" vertex="1">
                     <mxGeometry x="40" y="80" width="500" height="140" as="geometry"/>
-                </mxCell>
-                <mxCell id="metrics_box" value="Метрики производительности:&#xa;• Response time: 5-20ms (с кешем) vs 100-200ms (без кеша)&#xa;• Cache hit rate: 80%&#xa;• Снижение нагрузки на MongoDB: 80%" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalAlign=top;fontSize=11;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="240" width="380" height="80" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
