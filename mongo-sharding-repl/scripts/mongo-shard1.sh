@@ -4,8 +4,20 @@
 # Документы в Shard1
 ###
 
-echo Shard1
-docker compose exec -T shard1 mongosh --port 27018 --quiet <<EOF
+echo "\nShard1 (MASTER)"
+docker compose exec -T shard1_1 mongosh --port 27011 --quiet <<EOF
+use somedb
+db.helloDoc.countDocuments()
+EOF
+
+echo "\nShard1 (REPLICA1)"
+docker compose exec -T shard1_2 mongosh --port 27012 --quiet <<EOF
+use somedb
+db.helloDoc.countDocuments()
+EOF
+
+echo "\nShard1 (REPLICA2)"
+docker compose exec -T shard1_3 mongosh --port 27013 --quiet <<EOF
 use somedb
 db.helloDoc.countDocuments()
 EOF

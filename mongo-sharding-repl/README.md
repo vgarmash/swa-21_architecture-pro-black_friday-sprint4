@@ -8,7 +8,17 @@
 docker compose -f compose.yaml up -d
 ```
 
-## 2. Инициализация сервера конфигураций
+## 2. Инициализация кластера скриптом
+
+[mongo-sharding-repl.sh](./scripts/mongo-sharding-repl.sh)
+
+```bash
+./scripts/mongo-sharding-repl.sh
+```
+
+## 2. Инициализация кластера вручную
+
+### 2.1. Инициализация сервера конфигураций
 
 Подключаемся к поду сервера:
 ```bash
@@ -26,105 +36,52 @@ rs.initiate(
     ]
   }
 );
-```
-
-В ответ получим результат инициализации:
-```bash
-{
-  ok: 1,
-  '$clusterTime': {
-    clusterTime: Timestamp({ t: 1761458472, i: 1 }),
-    signature: {
-      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
-      keyId: Long('0')
-    }
-  },
-  operationTime: Timestamp({ t: 1761458472, i: 1 })
-}
-```
-
-Выходим из пода:
-```bash
 exit();
 ```
 
-## 3. Инициализация шардов
+### 2.2. Инициализация шардов
 
 Подключаемся к поду shard1:
 ```bash
-docker exec -it shard1 mongosh --port 27018
+docker exec -it shard1_1 mongosh --port 27011
 ```
 
 Выполняем команду инициализации:
 ```bash
 rs.initiate(
-    {
-      _id : "shard1",
-      members: [
-        { _id : 0, host : "shard1:27018" }
-      ]
-    }
+  {
+    _id : "shard1",
+    members: [
+      { _id: 0, host: "shard1_1:27011" },
+      { _id: 1, host: "shard1_2:27012" },
+      { _id: 2, host: "shard1_3:27013" }
+    ]
+  }
 );
-```
-
-В ответ получим результат инициализации:
-```bash
-{
-  ok: 1,
-  '$clusterTime': {
-    clusterTime: Timestamp({ t: 1761458495, i: 1 }),
-    signature: {
-      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
-      keyId: Long('0')
-    }
-  },
-  operationTime: Timestamp({ t: 1761458495, i: 1 })
-}
-```
-
-Выходим из пода:
-```bash
 exit();
 ```
 
 Подключаемся к поду shard2:
 ```bash
-docker exec -it shard2 mongosh --port 27019
+docker exec -it shard2_1 mongosh --port 27021
 ```
 
 Выполняем команду инициализации:
 ```bash
 rs.initiate(
-    {
-      _id : "shard2",
-      members: [
-        { _id : 1, host : "shard2:27019" }
-      ]
-    }
-  );
-```
-
-В ответ получим результат инициализации:
-```bash
-{
-  ok: 1,
-  '$clusterTime': {
-    clusterTime: Timestamp({ t: 1761458518, i: 1 }),
-    signature: {
-      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
-      keyId: Long('0')
-    }
-  },
-  operationTime: Timestamp({ t: 1761458518, i: 1 })
-}
-```
-
-Выходим из пода:
-```bash
+  {
+    _id : "shard2",
+    members: [
+      { _id: 0, host: "shard2_1:27021" },
+      { _id: 1, host: "shard2_2:27022" },
+      { _id: 2, host: "shard2_3:27023" }
+    ]
+  }
+);
 exit();
 ```
 
-## 4. Инициализация роутера
+### 2.3. Инициализация роутера
 
 Подключаемся к поду роутера:
 ```bash
@@ -138,82 +95,25 @@ sh.addShard( "shard2/shard2:27019");
 
 sh.enableSharding("somedb");
 sh.shardCollection("somedb.helloDoc", { "name" : "hashed" } )
-```
 
-Результат выполнения команды:
-```bash
-{
-  shardAdded: 'shard1',
-  ok: 1,
-  '$clusterTime': {
-    clusterTime: Timestamp({ t: 1761458537, i: 20 }),
-    signature: {
-      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
-      keyId: Long('0')
-    }
-  },
-  operationTime: Timestamp({ t: 1761458537, i: 20 })
-}
-
-{
-  shardAdded: 'shard2',
-  ok: 1,
-  '$clusterTime': {
-    clusterTime: Timestamp({ t: 1761458544, i: 24 }),
-    signature: {
-      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
-      keyId: Long('0')
-    }
-  },
-  operationTime: Timestamp({ t: 1761458544, i: 18 })
-}
-
-{
-  ok: 1,
-  '$clusterTime': {
-    clusterTime: Timestamp({ t: 1761458549, i: 10 }),
-    signature: {
-      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
-      keyId: Long('0')
-    }
-  },
-  operationTime: Timestamp({ t: 1761458549, i: 7 })
-}
-
-{
-  collectionsharded: 'somedb.helloDoc',
-  ok: 1,
-  '$clusterTime': {
-    clusterTime: Timestamp({ t: 1761458556, i: 49 }),
-    signature: {
-      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
-      keyId: Long('0')
-    }
-  },
-  operationTime: Timestamp({ t: 1761458556, i: 48 })
-}
-```
-
-Выходим из пода:
-```bash
 exit();
 ```
 
-# 5. Тестирование
-
+# 3. Тестирование
 
 [Скрипт наполнения тестовыми данными](./scripts/mongo-init.sh)
 
 Результат выполнения:
 ```bash
+------
    The server generated these startup warnings when booting
-   2025-10-26T05:29:20.240+00:00: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
+   2025-11-04T06:10:03.681+00:00: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
 ------
 
 [direct: mongos] test> switched to db somedb
 [direct: mongos] somedb> {
   acknowledged: true,
-  insertedId: ObjectId('68fdb991c9d20dd1e64f8be5')
+  insertedId: ObjectId('690998ec482bbaab234f8fcd')
 }
 ```
 
@@ -221,17 +121,35 @@ exit();
 [Скрипт тестирования shard2](./scripts/mongo-shard2.sh)
 
 ```bash
-saygindenis@MacBook-Air-Denis mongo-sharding % ./scripts/mongo-shard1.sh 
-Shard1
+saygindenis@MacBook-Air-Denis mongo-sharding-repl % ./scripts/mongo-shard1.sh 
+\nShard1 (MASTER)
 shard1 [direct: primary] test> switched to db somedb
 shard1 [direct: primary] somedb> 1016
-shard1 [direct: primary] somedb> % 
+shard1 [direct: primary] somedb> \nShard1 (REPLICA1)
+shard1 [direct: secondary] test> switched to db somedb
+shard1 [direct: secondary] somedb> 1016
+shard1 [direct: secondary] somedb> \nShard1 (REPLICA2)
+shard1 [direct: secondary] test> switched to db somedb
+shard1 [direct: secondary] somedb> 1016
+shard1 [direct: secondary] somedb> %   
 ```
 
 ```bash
-saygindenis@MacBook-Air-Denis mongo-sharding % ./scripts/mongo-shard2.sh
-Shard2
+saygindenis@MacBook-Air-Denis mongo-sharding-repl % ./scripts/mongo-shard2.sh
+\nShard2 (MASTER)
+shard2 [direct: secondary] test> switched to db somedb
+shard2 [direct: secondary] somedb> 984
+shard2 [direct: secondary] somedb> \nShard2 (REPLICA1)
+shard2 [direct: secondary] test> switched to db somedb
+shard2 [direct: secondary] somedb> 984
+shard2 [direct: secondary] somedb> \nShard2 (REPLICA2)
 shard2 [direct: primary] test> switched to db somedb
 shard2 [direct: primary] somedb> 984
-shard2 [direct: primary] somedb> %
+shard2 [direct: primary] somedb> %   
+```
+
+# 4. Удаление ресурсов
+
+```bash
+docker compose -f compose.yaml down -v
 ```
