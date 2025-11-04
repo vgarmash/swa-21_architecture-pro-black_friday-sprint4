@@ -8,17 +8,7 @@
 docker compose -f compose.yaml up -d
 ```
 
-## 2. Инициализация кластера скриптом
-
-[mongo-sharding.sh](./scripts/mongo-sharding.sh)
-
-```bash
-./scripts/mongo-sharding.sh
-```
-
-## 2. Инициализация кластера вручную
-
-### 2.1. Инициализация сервера конфигураций
+## 2. Инициализация сервера конфигураций
 
 Подключаемся к поду сервера:
 ```bash
@@ -58,7 +48,7 @@ rs.initiate(
 exit();
 ```
 
-### 2.2. Инициализация шардов
+## 3. Инициализация шардов
 
 Подключаемся к поду shard1:
 ```bash
@@ -68,12 +58,12 @@ docker exec -it shard1 mongosh --port 27018
 Выполняем команду инициализации:
 ```bash
 rs.initiate(
-  {
-    _id : "shard1",
-    members: [
-      { _id : 0, host : "shard1:27018" }
-    ]
-  }
+    {
+      _id : "shard1",
+      members: [
+        { _id : 0, host : "shard1:27018" }
+      ]
+    }
 );
 ```
 
@@ -105,13 +95,13 @@ docker exec -it shard2 mongosh --port 27019
 Выполняем команду инициализации:
 ```bash
 rs.initiate(
-  {
-    _id : "shard2",
-    members: [
-      { _id : 1, host : "shard2:27019" }
-    ]
-  }
-);
+    {
+      _id : "shard2",
+      members: [
+        { _id : 1, host : "shard2:27019" }
+      ]
+    }
+  );
 ```
 
 В ответ получим результат инициализации:
@@ -134,7 +124,7 @@ rs.initiate(
 exit();
 ```
 
-### 2.3. Инициализация роутера
+## 4. Инициализация роутера
 
 Подключаемся к поду роутера:
 ```bash
@@ -209,7 +199,8 @@ sh.shardCollection("somedb.helloDoc", { "name" : "hashed" } )
 exit();
 ```
 
-# 3. Тестирование
+# 5. Тестирование
+
 
 [Скрипт наполнения тестовыми данными](./scripts/mongo-init.sh)
 
@@ -243,10 +234,4 @@ Shard2
 shard2 [direct: primary] test> switched to db somedb
 shard2 [direct: primary] somedb> 984
 shard2 [direct: primary] somedb> %
-```
-
-# 4. Удаление ресурсов
-
-```bash
-docker compose -f compose.yaml down -v
 ```
