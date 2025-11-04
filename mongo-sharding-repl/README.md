@@ -122,13 +122,13 @@ exit();
 
 ```bash
 saygindenis@MacBook-Air-Denis mongo-sharding-repl % ./scripts/mongo-shard1.sh 
-\nShard1 (MASTER)
+Shard1 (MASTER)
 shard1 [direct: primary] test> switched to db somedb
 shard1 [direct: primary] somedb> 1016
-shard1 [direct: primary] somedb> \nShard1 (REPLICA1)
+shard1 [direct: primary] somedb> Shard1 (REPLICA1)
 shard1 [direct: secondary] test> switched to db somedb
 shard1 [direct: secondary] somedb> 1016
-shard1 [direct: secondary] somedb> \nShard1 (REPLICA2)
+shard1 [direct: secondary] somedb> Shard1 (REPLICA2)
 shard1 [direct: secondary] test> switched to db somedb
 shard1 [direct: secondary] somedb> 1016
 shard1 [direct: secondary] somedb> %   
@@ -136,13 +136,13 @@ shard1 [direct: secondary] somedb> %
 
 ```bash
 saygindenis@MacBook-Air-Denis mongo-sharding-repl % ./scripts/mongo-shard2.sh
-\nShard2 (MASTER)
+Shard2 (MASTER)
 shard2 [direct: secondary] test> switched to db somedb
 shard2 [direct: secondary] somedb> 984
-shard2 [direct: secondary] somedb> \nShard2 (REPLICA1)
+shard2 [direct: secondary] somedb> Shard2 (REPLICA1)
 shard2 [direct: secondary] test> switched to db somedb
 shard2 [direct: secondary] somedb> 984
-shard2 [direct: secondary] somedb> \nShard2 (REPLICA2)
+shard2 [direct: secondary] somedb> Shard2 (REPLICA2)
 shard2 [direct: primary] test> switched to db somedb
 shard2 [direct: primary] somedb> 984
 shard2 [direct: primary] somedb> %   
