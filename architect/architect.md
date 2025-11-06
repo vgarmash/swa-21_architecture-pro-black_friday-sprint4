@@ -1,0 +1,273 @@
+# Проектирование схем коллекций для шардирования данных
+
+## Products
+
+Коллекция products хранит сведения о товарах:
+
+```JSON
+{
+    "_id": "672a1b2c3d4e5f6a7b8c9d0e",
+    "name": "Телевизор 32``",
+    "category": "Телевизоры",
+    "price": 12000.0,
+    "attributes": {
+        "color": "Чёрный",
+        "size": "32``"
+    },
+    "stock_by_zones": {
+        "MSK": 34,
+        "SPB": 12
+    },
+    "created_at": "2025-11-05T12:34:56Z",
+    "updated_at": "2025-11-05T12:34:56Z"
+}
+```
+
+**Рекомендации по индексам:**
+
+- _id - уже индексирован по-умолчанию;
+- category - для поиска по категориям;
+- price - для фильтрации по диапазону цен.
+  
+Создание индексов:
+
+```
+db.products.createIndex({ category: 1 })
+db.products.createIndex({ price: 1 })
+db.products.createIndex({ category: 1, price: 1 })
+```
+
+**Операции:**
+
+- Добавление товара:
+    ```mongosh
+    db.products.insertOne({
+        _id: ObjectId("672a1b2c3d4e5f6a7b8c9d0e"),
+        name: "Телевизор 32``",
+        category: "Телевизоры",
+        price: 12000.00,
+        stock_by_zone: { "MSK": 34, "SPB": 12 },
+        attributes: { color: "Чёрный", size: "32``" },
+        created_at: new Date(),
+        updated_at: new Date()
+    })
+    ```
+- Поиск товара по категории и цене:
+    ```
+    db.products.find({
+        category: "Телевизоры",
+        price: { $gte: 10000, $lte: 20000 }
+    })
+  ```
+- Списание остатка по товару (в рамках транзакции):
+    ```
+    db.products.updateOne(
+        { 
+            _id: ObjectId("17fa191e810c19729de860ea"),
+            "stock_by_zone.MSK": { $gte: 2 }
+        },
+        { 
+            $inc: { "stock_by_zone.MSK": -2 },
+            $set: { updated_at: new Date() }
+        }
+    )
+    ```
+
+Характеристика коллекции:
+
+- Относительно небольшой объём данных (тысячи-десятки тысяч товаров);
+- Частые чтения (поиск по категории и цене, получени данных для карточки товара);
+- Частые записи (обновление остатков товаров) - критичны по производительности и атомарности;
+- Критична консистентность остатков;
+- Часто запрашивается по категориям, но это не уникальные записи - низкая селективность.
+
+Шардировать коллекцию не имеет смысла:
+
+- Объём данных небольшой и легко поместится на один реплика-сет;
+- Шардирование создаст дополнительные накладные расходы, что при таком объёме данных нецелесообразно.
+
+# Orders
+
+Коллекция orders включает заказы клиентов
+
+```JSON
+{
+    "_id": "17fa191e810c19729de860ea",
+    "user_id": "46fa191e814f19729de860ea",
+    "datetime": "2025-11-05T12:34:56Z",
+    "status": "confirmed",                      // Например: "pending", "confirmed", "shipped", "delivered", "cancelled"
+    "amount": 12000.0,
+    "zone": "MSK",
+    "items": [
+        {
+            "product_id": "672a1b2c3d4e5f6a7b8c9d0e",
+            "name": "Телевизор 32``",
+            "price": 12000.0,
+            "quantity": 1,
+            "zone": "MSK"
+        }
+    ]
+}
+```
+
+**Рекомендации по индексам:**
+
+- _id - уже индексирован по-умолчанию;
+- user_id - для поиска истории заказов по пользователю;
+- status - для поиска заказов по статусам для их обработки;
+- { user_id: 1, order_date: -1 } - для сортировки заказов по времени;
+- zone - для аналитики по гео-зонам.
+
+Создание индексов:
+```
+db.orders.createIndex({ user_id: 1 })
+db.orders.createIndex({ status: 1 })
+db.orders.createIndex({ user_id: 1, order_date: -1 })
+db.orders.createIndex({ zone: 1 })
+```
+
+**Операции:**
+
+- Создание заказа:
+    ```
+    db.orders.insertOne({
+        _id: ObjectId("17fa191e810c19729de860ea"),
+        user_id: ObjectId("46fa191e814f19729de860ea"),
+        order_date: new Date(),
+        items: [
+            {
+            product_id: ObjectId("672a1b2c3d4e5f6a7b8c9d0e"),
+            name: "Телевизор 32``",
+            price: 12000.00,
+            quantity: 1,
+            zone: "MSK"
+            }
+        ],
+        status: "confirmed",
+        total_amount: 12000.00,
+        zone: "MSK",
+        created_at: new Date()
+    })
+    ```
+- Получение истории заказов для пользователя:
+    ```
+    db.orders.find({
+        user_id: ObjectId("46fa191e814f19729de860ea")
+    }).sort({ order_date: -1 })
+    ```
+
+# Carts
+
+Коллекция carts хранит данные о текущих корзинах (как гостевых, так и пользовательских)
+
+```JSON
+{
+    "_id": "17fa191e810c19729de860ea",
+    "owner_id": "46fa191e814f19729de860ea",         // id пользователя или сессии гостя (например, "sess_46fa191e814f19729de860ea")
+    "type": "user",                                 // тип корзины - user, guest
+    "datetime": "2025-11-05T12:34:56Z",
+    "status": "active",                             // "active", "ordered", "abandoned"
+    "amount": 12000.0,
+    "zone": "MSK",
+    "items": [
+        {
+            "product_id": "672a1b2c3d4e5f6a7b8c9d0e",
+            "name": "Телевизор 32``",
+            "price": 12000.0,
+            "quantity": 1,
+            "zone": "MSK"
+        }
+    ],
+    "created_at": "2025-11-05T12:34:56Z",
+    "updated_at": "2025-11-05T12:34:56Z",
+    "expires_at": "2025-11-12T10:00:00Z"        // TTL через 7 дней
+}
+```
+
+**Рекомендации по индексам:**
+- _id - уже индексирован по-умолчанию;
+- { owner_id: 1, status: 1 } — для поиска корзины по пользователям и гостям;
+- expires_at — TTL-индекс для автоматической очистки:
+```mongosh
+db.carts.createIndex({ "expires_at": 1 }, { expireAfterSeconds: 0 })
+```
+
+Создание индексов:
+```
+db.carts.createIndex({ owner_id: 1, status: 1 })
+db.carts.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 })
+```
+
+**Операции:**
+- Создание корзины гостя:
+    ```
+    db.carts.insertOne({
+        owner_id: "sess_46fa191e814f19729de860ea",
+        type: "quest",
+        items: [],
+        status: "active",
+        created_at: new Date(),
+        updated_at: new Date(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    })
+    ```
+- Создание корзины авторизованного пользователя:
+    ```
+    db.carts.insertOne({
+        owner_id: ObjectId("46fa191e814f19729de860ea"),
+        type: "user",
+        items: [],
+        status: "active",
+        created_at: new Date(),
+        updated_at: new Date(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    })
+    ```
+- Получение корзины:
+  ```mongosh
+    // Для пользователя
+    db.carts.findOne({ owner_id: "sess_46fa191e814f19729de860ea", status: "active" })
+
+    // Для гостя
+    db.carts.findOne({ owner_id: "46fa191e814f19729de860ea", status: "active" })
+  ```
+- Добавление товара в корзину:
+    ```
+    db.carts.updateOne(
+        {
+            _id: ObjectId("17fa191e810c19729de860ea"),
+            "items.product_id": { $ne: ObjectId("672a1b2c3d4e5f6a7b8c9d0e") }
+        },
+        {
+            $push: {
+            items: { product_id: ObjectId("672a1b2c3d4e5f6a7b8c9d0e"), quantity: 1 }
+            },
+            $set: { updated_at: new Date() }
+        }
+    )
+    ```
+- Обновление существующего товара в корзине:
+    ```
+    db.carts.updateOne(
+        {
+            _id: ObjectId("17fa191e810c19729de860ea"),
+            "items.product_id": ObjectId("672a1b2c3d4e5f6a7b8c9d0e")
+        },
+        {
+            $inc: { "items.$.quantity": 1 },
+            $set: { updated_at: new Date() }
+        }
+    )
+    ```
+- Изменение статуса пользовательской корзины:
+    ```
+    db.carts.updateOne(
+        { _id: ObjectId("17fa191e810c19729de860ea") },
+        { 
+            $set: { 
+            status: "abandoned", 
+            updated_at: new Date() 
+            } 
+        }
+    )
+    ```
