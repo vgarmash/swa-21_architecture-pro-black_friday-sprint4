@@ -1,35 +1,33 @@
 # pymongo-api
 
-## Как запустить
+## Диаграмма
 
-Запускаем mongodb и приложение
+[Схема сервиса](./diagrams/task6.png)
 
-```shell
-docker compose up -d
+## Этапы создания приложения
+
+- [1. Шардирование](./mongo-sharding/README.md)
+- [2. Шардирование и репликация](./mongo-sharding-repl/README.md)
+- [3. Шардирование и кэширование](./sharding-repl-cache/README.md)
+
+## Как запустить приложение
+
+Запуск приложений:
+```bash
+docker compose -f ./sharding-repl-cache/compose.yaml up -d
 ```
 
-Заполняем mongodb данными
+Инициализация кластера MongoDB:
 
-```shell
-./scripts/mongo-init.sh
+```bash
+./sharding-repl-cache/scripts/sharding-repl-cache.sh
 ```
 
-## Как проверить
-
-### Если вы запускаете проект на локальной машине
-
-Откройте в браузере http://localhost:8080
-
-### Если вы запускаете проект на предоставленной виртуальной машине
-
-Узнать белый ip виртуальной машины
-
-```shell
-curl --silent http://ifconfig.me
+Удаление приложения и ресурсов:
+```bash
+docker compose -f ./sharding-repl-cache/compose.yaml down -v
 ```
 
-Откройте в браузере http://<ip виртуальной машины>:8080
+## Архитектурный документ
 
-## Доступные эндпоинты
-
-Список доступных эндпоинтов, swagger http://<ip виртуальной машины>:8080/docs
+[Архитектурный документ](./architect/architect.md)
