@@ -1,0 +1,206 @@
+name: mongo-sharding
+
+services:
+  pymongo_api:
+    container_name: pymongo_api
+    build:
+      context: api_app
+      dockerfile: Dockerfile
+    depends_on:
+      mongos_router:
+        condition: service_healthy
+    ports:
+      - 8080:8080
+    environment:
+      MONGODB_URL: "mongodb://mongos_router:27020"
+      MONGODB_DATABASE_NAME: "somedb"
+
+  # сервер конфигурации
+  configSrv:
+    image: mongo:latest
+    container_name: configSrv
+    restart: always
+    ports:
+      - "27017:27017"
+    networks:
+      - app-network
+    volumes:
+      - config-data:/data/db
+      - ./scripts/config-init.js:/scripts/config-init.js:ro
+    command:
+      [
+        "--configsvr",
+        "--replSet",
+        "config_server",
+        "--bind_ip_all",
+        "--port",
+        "27017"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "rs.status().ok" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # 1-й шард
+  shard1:
+    image: mongo:latest
+    container_name: shard1
+    restart: always
+    ports:
+      - "27018:27018"
+    networks:
+      - app-network
+    volumes:
+      - shard1-data:/data/db
+      - ./scripts/shard1-init.js:/scripts/shard1-init.js:ro
+    command:
+      [
+        "--shardsvr",
+        "--replSet",
+        "shard1",
+        "--bind_ip_all",
+        "--port",
+        "27018"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--port", "27018", "--eval", "rs.status().ok" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # 2-й шард
+  shard2:
+    image: mongo:latest
+    container_name: shard2
+    restart: always
+    ports:
+      - "27019:27019"
+    networks:
+      - app-network
+    volumes:
+      - shard2-data:/data/db
+      - ./scripts/shard2-init.js:/scripts/shard2-init.js:ro
+    command:
+      [
+        "--shardsvr",
+        "--replSet",
+        "shard2",
+        "--bind_ip_all",
+        "--port",
+        "27019"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--port", "27019", "--eval", "rs.status().ok" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # роутер
+  mongos_router:
+    image: mongo:latest
+    container_name: mongos_router
+    restart: always
+    ports:
+      - "27020:27020"
+    depends_on:
+      configSrv:
+        condition: service_healthy
+      shard1:
+        condition: service_healthy
+      shard2:
+        condition: service_healthy
+    networks:
+      - app-network
+    command:
+      [
+        "mongos",
+        "--configdb",
+        "config_server/configSrv:27017",
+        "--bind_ip_all",
+        "--port",
+        "27020"
+      ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--port", "27020", "--eval", "sh.status()" ]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 90s
+
+  # Инициализация реплика-сетов
+  init_replicas:
+    image: mongo:latest
+    container_name: mongo_init_replicas
+    restart: "no"
+    depends_on:
+      configSrv:
+        condition: service_started
+      shard1:
+        condition: service_started
+      shard2:
+        condition: service_started
+    networks:
+      - app-network
+    volumes:
+      - ./scripts:/scripts
+    command:
+      - /bin/bash
+      - -c
+      - |
+        echo "Initializing replica sets..."
+        sleep 10
+        
+        echo "Initializing config server replica set..."
+        until mongosh --host configSrv:27017 --file /scripts/config-init.js; do
+          echo "Config server not ready, retrying in 5 seconds..."
+          sleep 5
+        done
+        
+        echo "Initializing shard1 replica set..."
+        until mongosh --host shard1:27018 --file /scripts/shard1-init.js; do
+          echo "Shard1 not ready, retrying in 5 seconds..."
+          sleep 5
+        done
+        
+        echo "Initializing shard2 replica set..."
+        until mongosh --host shard2:27019 --file /scripts/shard2-init.js; do
+          echo "Shard2 not ready, retrying in 5 seconds..."
+          sleep 5
+        done
+        
+        echo "All replica sets initialized successfully!"
+
+  # Сервис для инициализации шардинга
+  mongo_init:
+    image: mongo:latest
+    container_name: mongo_init
+    restart: "no"
+    depends_on:
+      init_replicas:
+        condition: service_completed_successfully
+      mongos_router:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      - ./scripts:/scripts
+    command:
+      - /bin/bash
+      - -c
+      - |
+        echo "Waiting for mongos router to be ready..."
+        sleep 10
+        /scripts/init-sharding.sh
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  config-data:
+  shard1-data:
+  shard2-data:
