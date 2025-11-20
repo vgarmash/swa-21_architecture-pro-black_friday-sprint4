@@ -18,19 +18,22 @@ from redis import asyncio as aioredis
 from typing_extensions import Annotated
 
 # Configure JSON logging
-logging.config.dictConfig(logging_config)
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 app.add_middleware(
     RouterLoggingMiddleware,
     logger=logger,
+    api_debug=True,  # Set to True to enable debugging of response bodies
 )
 
 DATABASE_URL = os.environ["MONGODB_URL"]
 DATABASE_NAME = os.environ["MONGODB_DATABASE_NAME"]
 REDIS_URL = os.getenv("REDIS_URL", None)
 
+logger.info(f"Starting application with MongoDB URL: {DATABASE_URL}")
+logger.info(f"Redis URL: {REDIS_URL}")
 
 def nocache(*args, **kwargs):
     def decorator(func):
@@ -55,10 +58,60 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 
 @app.on_event("startup")
 async def startup():
+    logger.info("Application starting up...")
+    logger.info("Environment variables:")
+    logger.info(f"  MONGODB_URL: {DATABASE_URL}")
+    logger.info(f"  MONGODB_DATABASE_NAME: {DATABASE_NAME}")
+    logger.info(f"  REDIS_URL: {REDIS_URL}")
+
+    # Test MongoDB connection
+    try:
+        await client.admin.command('ping')
+        logger.info("MongoDB connection: SUCCESS")
+    except Exception as e:
+        logger.error(f"MongoDB connection: FAILED - {e}")
+
     if REDIS_URL:
         redis = aioredis.from_url(REDIS_URL, encoding="utf8", decode_responses=True)
         FastAPICache.init(RedisBackend(redis), prefix="api:cache")
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Docker healthcheck"""
+    mongo_status = "unknown"
+    redis_status = "disabled"
+
+    try:
+        await client.admin.command('ping')
+        mongo_status = "healthy"
+    except Exception as e:
+        mongo_status = f"unhealthy: {e}"
+
+    # Безопасная проверка Redis
+    if REDIS_URL:
+        try:
+            # Пытаемся получить бэкенд, но ловим исключение
+            backend = FastAPICache.get_backend()
+            if backend:
+                await backend.redis.ping()
+                redis_status = "healthy"
+            else:
+                redis_status = "not_initialized"
+        except AssertionError:
+            # FastAPICache не инициализирован
+            redis_status = "not_initialized"
+        except Exception as e:
+            redis_status = f"unhealthy: {e}"
+
+    # Всегда возвращаем 200, главное что приложение работает
+    health_status = "healthy" if mongo_status == "healthy" else "degraded"
+
+    return {
+        "status": health_status,
+        "mongo": mongo_status,
+        "redis": redis_status,
+        "timestamp": time.time()
+    }
 
 class UserModel(BaseModel):
     """
