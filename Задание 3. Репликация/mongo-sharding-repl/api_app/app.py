@@ -15,6 +15,8 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from pydantic.functional_validators import BeforeValidator
 from pymongo import errors
 from redis import asyncio as aioredis
+from redis.cluster import ClusterNode
+from redis.exceptions import ConnectionError as RedisConnectionError
 from typing_extensions import Annotated
 
 # Configure JSON logging
@@ -24,8 +26,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 app.add_middleware(
     RouterLoggingMiddleware,
-    logger=logger,
-    api_debug=True,  # Set to True to enable debugging of response bodies
+    logger=logger
 )
 
 DATABASE_URL = os.environ["MONGODB_URL"]
@@ -38,23 +39,23 @@ logger.info(f"Redis URL: {REDIS_URL}")
 def nocache(*args, **kwargs):
     def decorator(func):
         return func
-
     return decorator
-
 
 if REDIS_URL:
     cache = cache
 else:
     cache = nocache
 
-
-client = motor.motor_asyncio.AsyncIOMotorClient(DATABASE_URL)
-db = client[DATABASE_NAME]
+try:
+    client = motor.motor_asyncio.AsyncIOMotorClient(DATABASE_URL, serverSelectionTimeoutMS=5000)
+    db = client[DATABASE_NAME]
+    logger.info("MongoDB client initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize MongoDB client: {e}")
+    raise
 
 # Represents an ObjectId field in the database.
-# It will be represented as a `str` on the model so that it can be serialized to JSON.
 PyObjectId = Annotated[str, BeforeValidator(str)]
-
 
 @app.on_event("startup")
 async def startup():
@@ -71,9 +72,56 @@ async def startup():
     except Exception as e:
         logger.error(f"MongoDB connection: FAILED - {e}")
 
+    # Initialize Redis cache if available
     if REDIS_URL:
-        redis = aioredis.from_url(REDIS_URL, encoding="utf8", decode_responses=True)
-        FastAPICache.init(RedisBackend(redis), prefix="api:cache")
+        try:
+            logger.info(f"Initializing Redis cache with URL: {REDIS_URL}")
+
+            # Для Redis кластера
+            if ',' in REDIS_URL:
+                # Формат: redis://host1:port1,host2:port2,host3:port3
+                # Удаляем префикс redis:// и разбиваем по запятым
+                nodes_str = REDIS_URL.replace('redis://', '')
+
+                # Создаем список узлов в формате, который понимает RedisCluster
+                startup_nodes = []
+                for node in nodes_str.split(','):
+                    host, port = node.split(':')
+                    logger.info(f"host: {host}, port: {port}")
+                    startup_nodes.append(ClusterNode(host, int(port)))
+
+                # Для Redis 8.x используем правильные параметры
+                redis = aioredis.RedisCluster(
+                    startup_nodes=startup_nodes,
+                    decode_responses=False,
+                    require_full_coverage=False
+                )
+            else:
+                # Одиночный Redis
+                redis = aioredis.from_url(
+                    REDIS_URL,
+                    encoding="utf8",
+                    decode_responses=False
+                )
+
+            # Тестируем подключение
+            await redis.ping()
+            logger.info("Redis connection: SUCCESS")
+
+            # Инициализируем кэш
+            FastAPICache.init(RedisBackend(redis), prefix="api:cache")
+            logger.info("FastAPI Cache initialized successfully")
+
+        except Exception as e:
+            logger.error(f"Redis initialization failed: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            # Устанавливаем cache в nocache режим
+            global cache
+            cache = nocache
+            logger.info("Cache disabled due to Redis initialization failure")
+    else:
+        logger.info("Redis cache disabled - no REDIS_URL provided")
 
 @app.get("/health")
 async def health_check():
@@ -112,6 +160,7 @@ async def health_check():
         "redis": redis_status,
         "timestamp": time.time()
     }
+
 
 class UserModel(BaseModel):
     """

@@ -1,4 +1,4 @@
-FROM python:3.12.1-slim
+FROM python:3.14.0-slim
 WORKDIR /app
 EXPOSE 8080
 COPY requirements.txt ./
