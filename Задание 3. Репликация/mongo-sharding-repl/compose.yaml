@@ -18,17 +18,10 @@ services:
       MONGODB_DATABASE_NAME: "somedb"
     networks:
       - app-network
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   # Конфигурационные серверы
   configSrv1:
     image: mongo:latest
-    restart: always
     command: mongod --configsvr --replSet configrs --bind_ip_all --port 27017
     ports:
       - "27017:27017"
@@ -47,7 +40,6 @@ services:
 
   configSrv2:
     image: mongo:latest
-    restart: always
     command: mongod --configsvr --replSet configrs --bind_ip_all --port 27017
     ports:
       - "27018:27017"
@@ -69,7 +61,6 @@ services:
 
   configSrv3:
     image: mongo:latest
-    restart: always
     command: mongod --configsvr --replSet configrs --bind_ip_all --port 27017
     ports:
       - "27019:27017"
@@ -110,7 +101,6 @@ services:
   # 1-й шард (3 реплики)
   shard1a:
     image: mongo:latest
-    restart: always
     command: mongod --shardsvr --replSet shard1rs --bind_ip_all --port 27017
     ports:
       - "27021:27017"
@@ -131,7 +121,6 @@ services:
 
   shard1b:
     image: mongo:latest
-    restart: always
     command: mongod --shardsvr --replSet shard1rs --bind_ip_all --port 27017
     ports:
       - "27022:27017"
@@ -152,7 +141,6 @@ services:
 
   shard1c:
     image: mongo:latest
-    restart: always
     command: mongod --shardsvr --replSet shard1rs --bind_ip_all --port 27017
     ports:
       - "27023:27017"
@@ -192,7 +180,6 @@ services:
   # 2-й шард (3 реплики)
   shard2a:
     image: mongo:latest
-    restart: always
     command: mongod --shardsvr --replSet shard2rs --bind_ip_all --port 27017
     ports:
       - "27024:27017"
@@ -213,7 +200,6 @@ services:
 
   shard2b:
     image: mongo:latest
-    restart: always
     command: mongod --shardsvr --replSet shard2rs --bind_ip_all --port 27017
     ports:
       - "27025:27017"
@@ -234,7 +220,6 @@ services:
 
   shard2c:
     image: mongo:latest
-    restart: always
     command: mongod --shardsvr --replSet shard2rs --bind_ip_all --port 27017
     ports:
       - "27026:27017"
