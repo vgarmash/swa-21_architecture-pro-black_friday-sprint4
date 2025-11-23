@@ -4,13 +4,10 @@ services:
     image: dh-mirror.gitverse.ru/mongo:latest
     volumes:
       - mongodb1_data_container:/data/db
-    ports:
-      - "27017:27017"  # Проброс порта 27017 контейнера на порт 27017 хоста
-
 
   pymongo_api:
     container_name: pymongo_api
-    build:
+    build: 
       context: api_app
       dockerfile: Dockerfile
     depends_on:
@@ -18,8 +15,9 @@ services:
     ports:
       - 8080:8080
     environment:
-      MONGODB_URL: "mongodb://mongodb1:27017"  # Указываем порт явно
+      MONGODB_URL: "mongodb://mongodb1"
       MONGODB_DATABASE_NAME: "somedb"
+
 
 volumes:
   mongodb1_data_container:
