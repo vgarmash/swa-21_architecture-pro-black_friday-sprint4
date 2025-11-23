@@ -14,8 +14,6 @@ services:
     environment:
       MONGODB_URL: "mongodb://mongos_router:27020"
       MONGODB_DATABASE_NAME: "somedb"
-    networks:
-      - app-network
 
   # сервер конфигурации
   configSrv:

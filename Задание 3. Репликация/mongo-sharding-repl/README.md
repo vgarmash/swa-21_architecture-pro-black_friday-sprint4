@@ -17,11 +17,11 @@ docker compose down -v
 ## Для проверки состояния кластера Mongo
 
 ### Проверить статус шардинга
-docker compose exec mongos_router mongosh --port 27017 --eval "sh.status()"
+docker compose exec mongos_router mongosh --port 27020 --eval "sh.status()"
 
 ### Проверить replica sets
 docker compose exec configSrv1 mongosh --port 27017 --eval "rs.status()"
-docker compose exec shard1a mongosh --port 27017 --eval "rs.status()"
+docker compose exec shard1a mongosh --port 27018 --eval "rs.status()"
 
 
 ## Как проверить pymongo-api
